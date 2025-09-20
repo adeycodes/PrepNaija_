@@ -1,0 +1,184 @@
+nohup: ignoring input
+
+> rest-express@1.0.0 dev:all
+> concurrently "npm run dev" "npm run dev:front" --names "backend,frontend" --prefix-colors "blue,green"
+
+[frontend] 
+[frontend] > rest-express@1.0.0 dev:front
+[frontend] > vite
+[frontend] 
+[backend] 
+[backend] > rest-express@1.0.0 dev
+[backend] > NODE_ENV=development tsx server/index.ts
+[backend] 
+[frontend] 
+[frontend]   VITE v5.4.19  ready in 985 ms
+[frontend] 
+[frontend]   ➜  Local:   http://localhost:5173/
+[frontend]   ➜  Network: use --host to expose
+[backend] ✅ Resolved aws-1-us-west-1.pooler.supabase.com to IPv4: 3.101.5.153
+[backend] ✅ Connected to Supabase DB via IPv4
+[backend] Supabase auth setup complete
+[backend] 11:35:51 AM [express] serving on port 5000
+[backend] Failed to seed questions: error: column "question_text" does not exist
+[backend]     at /home/emmy/Desktop/PrepNaija/node_modules/pg/lib/client.js:545:17
+[backend]     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[backend]     at async <anonymous> (/home/emmy/Desktop/PrepNaija/node_modules/src/node-postgres/session.ts:104:19)
+[backend]     at async DatabaseStorage.getAllQuestions (/home/emmy/Desktop/PrepNaija/server/storage.ts:97:12)
+[backend]     at async QuestionService.seedInitialQuestions (/home/emmy/Desktop/PrepNaija/server/services/questionService.ts:63:31)
+[backend]     at async Timeout._onTimeout (/home/emmy/Desktop/PrepNaija/server/routes.ts:21:7) {
+[backend]   length: 113,
+[backend]   severity: 'ERROR',
+[backend]   code: '42703',
+[backend]   detail: undefined,
+[backend]   hint: undefined,
+[backend]   position: '34',
+[backend]   internalPosition: undefined,
+[backend]   internalQuery: undefined,
+[backend]   where: undefined,
+[backend]   schema: undefined,
+[backend]   table: undefined,
+[backend]   column: undefined,
+[backend]   dataType: undefined,
+[backend]   constraint: undefined,
+[backend]   file: 'parse_relation.c',
+[backend]   line: '3716',
+[backend]   routine: 'errorMissingColumn'
+[backend] }
+[frontend] 12:11:11 PM [vite] ✨ new dependencies optimized: @radix-ui/react-scroll-area
+[frontend] 12:11:11 PM [vite] ✨ optimized dependencies changed. reloading
+[backend] 12:11:36 PM [express] GET /api/auth/me 401 in 2498ms :: {"error":"Invalid token"}
+[backend] 12:11:55 PM [express] POST /api/auth/login 200 in 1600ms :: {"user":{"id":"12e2f4da-19b4-4c0b-a2d4-b7...
+[backend] 12:12:08 PM [express] GET /api/progress 200 in 1410ms :: []
+[backend] 12:19:21 PM [express] GET /api/auth/me 200 in 1194ms :: {"user":{"id":"455251a6-cb52-4faf-8d79-3b8e8c...
+[frontend] 12:22:15 PM [vite] http proxy error: /api/achievements
+[frontend] Error: socket hang up
+[frontend]     at Socket.socketOnEnd (node:_http_client:542:25)
+[frontend]     at Socket.emit (node:events:530:35)
+[frontend]     at endReadableNT (node:internal/streams/readable:1698:12)
+[frontend]     at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+[frontend] 12:22:15 PM [vite] http proxy error: /api/quiz/history
+[frontend] Error: socket hang up
+[frontend]     at Socket.socketOnEnd (node:_http_client:542:25)
+[frontend]     at Socket.emit (node:events:530:35)
+[frontend]     at endReadableNT (node:internal/streams/readable:1698:12)
+[frontend]     at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+[backend] node:events:496
+[backend]       throw er; // Unhandled 'error' event
+[backend]       ^
+[backend] 
+[backend] Error: Connection terminated unexpectedly
+[backend]     at Connection.<anonymous> (/home/emmy/Desktop/PrepNaija/node_modules/pg/lib/client.js:136:73)
+[backend]     at Object.onceWrapper (node:events:632:28)
+[backend]     at Connection.emit (node:events:518:28)
+[backend]     at Socket.<anonymous> (/home/emmy/Desktop/PrepNaija/node_modules/pg/lib/connection.js:62:12)
+[backend]     at Socket.emit (node:events:530:35)
+[backend]     at TCP.<anonymous> (node:net:346:12)
+[backend] Emitted 'error' event on Client instance at:
+[backend]     at Client._handleErrorEvent (/home/emmy/Desktop/PrepNaija/node_modules/pg/lib/client.js:350:10)
+[backend]     at Connection.<anonymous> (/home/emmy/Desktop/PrepNaija/node_modules/pg/lib/client.js:154:16)
+[backend]     at Object.onceWrapper (node:events:632:28)
+[backend]     [... lines matching original stack trace ...]
+[backend]     at TCP.<anonymous> (node:net:346:12)
+[backend] 
+[backend] Node.js v22.18.0
+[frontend] 12:22:17 PM [vite] http proxy error: /api/progress
+[frontend] Error: socket hang up
+[frontend]     at Socket.socketOnEnd (node:_http_client:542:25)
+[frontend]     at Socket.emit (node:events:530:35)
+[frontend]     at endReadableNT (node:internal/streams/readable:1698:12)
+[frontend]     at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+[backend] npm run dev exited with code 1
+[frontend] 12:22:20 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:25 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:32 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:34 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:36 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:36 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:36 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:37 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:37 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:37 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:22:37 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:23:06 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:23:07 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:23:08 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:26:50 PM [vite] http proxy error: /api/auth/me
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:26:53 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:27:11 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 12:39:15 PM [vite] hmr update /src/App.tsx, /src/index.css
+[frontend] 12:39:28 PM [vite] hmr update /src/components/dashboard/Overview.tsx, /src/index.css
+[frontend] 12:39:46 PM [vite] hmr update /src/components/dashboard/Overview.tsx, /src/index.css
+[frontend] 12:39:59 PM [vite] hmr update /src/components/dashboard/Subjects.tsx, /src/index.css
+[frontend] 12:40:10 PM [vite] hmr update /src/components/dashboard/Subjects.tsx, /src/index.css
+[frontend] 12:40:20 PM [vite] hmr update /src/components/dashboard/Subjects.tsx, /src/index.css
+[frontend] 12:42:45 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 12:42:57 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 12:43:11 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 12:43:43 PM [vite] hmr update /src/components/QuizInterface.tsx, /src/index.css
+[frontend] 12:46:25 PM [vite] hmr update /src/index.css, /src/hooks/useOffline.tsx, /src/hooks/useQuiz.tsx
+[frontend] 12:46:26 PM [vite] hmr invalidate /src/hooks/useOffline.tsx Could not Fast Refresh ("useOffline" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[frontend] 12:46:26 PM [vite] hmr update /src/index.css, /src/pages/Practice.tsx, /src/pages/Profile.tsx, /src/components/Header.tsx
+[frontend] 12:46:26 PM [vite] hmr invalidate /src/hooks/useQuiz.tsx Could not Fast Refresh ("useQuiz" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[frontend] 12:46:26 PM [vite] hmr update /src/index.css, /src/components/QuizInterface.tsx
+[frontend] 12:46:46 PM [vite] hmr update /src/hooks/useQuiz.tsx, /src/index.css
+[frontend] 12:46:46 PM [vite] hmr invalidate /src/hooks/useQuiz.tsx Could not Fast Refresh ("useQuiz" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[frontend] 12:46:46 PM [vite] hmr update /src/index.css, /src/components/QuizInterface.tsx
+[frontend] 12:46:55 PM [vite] hmr update /src/components/QuizInterface.tsx, /src/index.css
+[frontend] 12:49:25 PM [vite] http proxy error: /api/auth/login
+[frontend] Error: connect ECONNREFUSED 127.0.0.1:5000
+[frontend]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[frontend] 1:45:23 PM [vite] hmr update /src/pages/Dashboard.tsx, /src/index.css
+[frontend] 1:47:35 PM [vite] hmr update /src/index.css, /src/hooks/useOffline.tsx, /src/hooks/useQuiz.tsx
+[frontend] 1:47:36 PM [vite] hmr invalidate /src/hooks/useOffline.tsx Could not Fast Refresh ("useOffline" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[frontend] 1:47:36 PM [vite] hmr update /src/index.css, /src/pages/Practice.tsx, /src/pages/Profile.tsx, /src/components/Header.tsx
+[frontend] 1:47:36 PM [vite] hmr invalidate /src/hooks/useQuiz.tsx Could not Fast Refresh ("useQuiz" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[frontend] 1:47:36 PM [vite] hmr update /src/index.css, /src/components/QuizInterface.tsx
+[frontend] 1:49:16 PM [vite] hmr update /src/App.tsx, /src/index.css
+[frontend] 1:53:05 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 1:54:42 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 1:55:16 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 1:55:33 PM [vite] hmr update /src/components/QuizSelector.tsx, /src/index.css
+[frontend] 1:58:43 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 1:58:59 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 1:59:32 PM [vite] hmr update /src/components/QuizInterface.tsx, /src/index.css
+[frontend] 3:05:53 PM [vite] hmr update /src/components/dashboard/Overview.tsx, /src/index.css
+[frontend] 3:06:05 PM [vite] hmr update /src/pages/Practice.tsx, /src/index.css
+[frontend] 3:06:21 PM [vite] hmr update /src/pages/Practice.tsx, /src/index.css
+[frontend] 3:07:04 PM [vite] hmr update /src/pages/Quiz.tsx, /src/index.css
+[frontend] 3:07:24 PM [vite] hmr update /src/components/dashboard/Overview.tsx, /src/index.css
+[frontend] npm run dev:front exited with code SIGTERM

@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepNaija - Nigerian Exam Preparation Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    success: "var(--success)",
+                    warning: "var(--warning)",
+                },
+                fontFamily: {
+                    sans: ["Inter", "system-ui", "sans-serif"],
+                }
+            },
+        }
+    };
+    </script>
+    <style>
+        :root {
+            --radius: 0.5rem;
+            /* Light mode colors */
+            --background: hsl(0 0% 100%);
+            --foreground: hsl(222.2 84% 4.9%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222.2 84% 4.9%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(222.2 84% 4.9%);
+            --primary: hsl(142.1 76.2% 36.3%); /* Green #10B981 */
+            --primary-foreground: hsl(355.7 100% 97.3%);
+            --secondary: hsl(217.2 91.2% 59.8%); /* Blue #3B82F6 */
+            --secondary-foreground: hsl(222.2 84% 4.9%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215.4 16.3% 46.9%);
+            --accent: hsl(210 40% 95%);
+            --accent-foreground: hsl(222.2 84% 4.9%);
+            --destructive: hsl(0 84.2% 60.2%); /* Red #EF4444 */
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(214.3 31.8% 91.4%);
+            --input: hsl(214.3 31.8% 91.4%);
+            --ring: hsl(142.1 76.2% 36.3%);
+            --success: hsl(142.1 76.2% 36.3%);
+            --warning: hsl(32.5 94.6% 43.7%);
+        }
+        
+        .dark {
+            --background: hsl(222.2 84% 4.9%);
+            --foreground: hsl(210 40% 98%);
+            --card: hsl(222.2 84% 4.9%);
+            --card-foreground: hsl(210 40% 98%);
+            --popover: hsl(222.2 84% 4.9%);
+            --popover-foreground: hsl(210 40% 98%);
+            --primary: hsl(142.1 70.6% 45.3%);
+            --primary-foreground: hsl(144.9 80.4% 10%);
+            --secondary: hsl(217.2 91.2% 59.8%);
+            --secondary-foreground: hsl(210 40% 98%);
+            --muted: hsl(217.2 32.6% 17.5%);
+            --muted-foreground: hsl(215 20.2% 65.1%);
+            --accent: hsl(217.2 32.6% 17.5%);
+            --accent-foreground: hsl(210 40% 98%);
+            --destructive: hsl(0 62.8% 30.6%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(217.2 32.6% 17.5%);
+            --input: hsl(217.2 32.6% 17.5%);
+            --ring: hsl(142.4 71.8% 29.2%);
+        }
+        
+        .quiz-option {
+            transition: all 0.2s ease;
+        }
+        
+        .quiz-option:hover {
+            transform: translateY(-1px);
+        }
+        
+        .progress-ring {
+            transition: stroke-dasharray 0.3s ease-in-out;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-background text-foreground min-h-screen">
+    <!-- @COMPONENT: App [Main application wrapper] -->
+    <div id="app">
+        <!-- Header Navigation -->
+        <!-- @COMPONENT: Header [Navigation and user controls] -->
+        <header class="bg-card border-b border-border sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                                <i class="fas fa-graduation-cap text-primary-foreground text-sm"></i>
+                            </div>
+                            <span class="text-xl font-bold text-foreground">PrepNaija</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center space-x-6">
+                        <nav class="flex space-x-6">
+                            <button class="text-foreground hover:text-primary font-medium">Dashboard</button>
+                            <button class="text-muted-foreground hover:text-primary font-medium">Practice</button>
+                            <button class="text-muted-foreground hover:text-primary font-medium">Progress</button>
+                            <button class="text-muted-foreground hover:text-primary font-medium">Leaderboard</button>
+                        </nav>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Offline Indicator -->
+                        <div class="hidden" id="offline-indicator">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/20">
+                                <i class="fas fa-wifi-slash mr-1"></i>
+                                Offline
+                            </span>
+                        </div>
+                        
+                        <!-- Energy Points -->
+                        <div class="flex items-center space-x-1 bg-accent px-3 py-1.5 rounded-full">
+                            <i class="fas fa-bolt text-warning text-sm"></i>
+                            <span class="text-sm font-semibold" data-bind="user.energyPoints">2,450</span>
+                        </div>
+                        
+                        <!-- Profile -->
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                                <span class="text-primary-foreground text-sm font-semibold" data-bind="user.initials">KA</span>
+                            </div>
+                            <span class="hidden sm:block text-sm font-medium" data-bind="user.firstName">Kemi</span>
+                        </div>
+                        
+                        <!-- Mobile Menu Button -->
+                        <button class="md:hidden p-2">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- @END_COMPONENT: Header -->
+
+        <!-- Main Content Area -->
+        <main class="flex-1">
+            
+            <!-- Landing Section (for new users) -->
+            <!-- @COMPONENT: LandingHero [Hero section for landing page] -->
+            <section class="bg-gradient-to-br from-primary/5 to-secondary/5 py-12 md:py-20" id="landing-section">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center">
+                        <h1 class="text-4xl md:text-6xl font-bold text-foreground mb-6">
+                            Ace Your Nigerian Exams with 
+                            <span class="text-primary">PrepNaija</span>
+                        </h1>
+                        <p class="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+                            Master JAMB, WAEC & NECO with AI-powered practice, personalized learning paths, and instant feedback. Join thousands of Nigerian students succeeding with PrepNaija.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+                            <button class="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-primary/90 transition-colors w-full sm:w-auto">
+                                Start Practicing Free
+                                <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                            <button class="border-2 border-primary text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-primary hover:text-primary-foreground transition-colors w-full sm:w-auto">
+                                <i class="fas fa-play mr-2"></i>
+                                Watch Demo
+                            </button>
+                        </div>
+                        
+                        <!-- Stats -->
+                        <div class="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+                            <div class="text-center">
+                                <div class="text-3xl md:text-4xl font-bold text-primary">50K+</div>
+                                <div class="text-sm text-muted-foreground">Students</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl md:text-4xl font-bold text-secondary">10K+</div>
+                                <div class="text-sm text-muted-foreground">Questions</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl md:text-4xl font-bold text-success">95%</div>
+                                <div class="text-sm text-muted-foreground">Pass Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- @END_COMPONENT: LandingHero -->
+            
+            <!-- Dashboard Section (authenticated users) -->
+            <!-- @COMPONENT: Dashboard [Main dashboard with progress and subjects] -->
+            <section class="py-8" id="dashboard-section">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    
+                    <!-- Welcome Banner -->
+                    <div class="bg-gradient-to-r from-primary to-secondary rounded-xl p-6 mb-8 text-white">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <div class="mb-4 md:mb-0">
+                                <h2 class="text-2xl md:text-3xl font-bold mb-2">
+                                    Welcome back, <span data-bind="user.firstName">Kemi</span>! 👋
+                                </h2>
+                                <p class="text-white/90">
+                                    You're on a 5-day streak! Keep it up to unlock new achievements.
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold">5</div>
+                                    <div class="text-xs text-white/80">Day Streak</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold">78%</div>
+                                    <div class="text-xs text-white/80">Avg Score</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-card border border-border rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Questions Answered</p>
+                                    <p class="text-2xl font-bold text-foreground" data-bind="stats.questionsAnswered">1,247</p>
+                                </div>
+                                <i class="fas fa-question-circle text-primary text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="bg-card border border-border rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Accuracy Rate</p>
+                                    <p class="text-2xl font-bold text-success" data-bind="stats.accuracy">78%</p>
+                                </div>
+                                <i class="fas fa-bullseye text-success text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="bg-card border border-border rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Study Hours</p>
+                                    <p class="text-2xl font-bold text-secondary" data-bind="stats.studyHours">42h</p>
+                                </div>
+                                <i class="fas fa-clock text-secondary text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="bg-card border border-border rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Rank</p>
+                                    <p class="text-2xl font-bold text-warning" data-bind="stats.rank">#23</p>
+                                </div>
+                                <i class="fas fa-trophy text-warning text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Subject Cards -->
+                    <!-- @COMPONENT: SubjectCards [Grid of subject practice cards] -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <!-- @MAP: subjects.map(subject => ( -->
+                        
+                        <!-- Mathematics Card -->
+                        <div class="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-calculator text-primary text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-foreground">Mathematics</h3>
+                                        <p class="text-sm text-muted-foreground">142 questions practiced</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-primary">85%</div>
+                                    <div class="text-xs text-muted-foreground">Mastery</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="w-full bg-muted rounded-full h-2 mb-4">
+                                <div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
+                                        <i class="fas fa-check mr-1"></i>
+                                        Mastered
+                                    </span>
+                                </div>
+                                <button class="text-primary font-medium text-sm hover:underline">
+                                    Practice Now →
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- English Card -->
+                        <div class="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-book text-secondary text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-foreground">English Language</h3>
+                                        <p class="text-sm text-muted-foreground">98 questions practiced</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-secondary">72%</div>
+                                    <div class="text-xs text-muted-foreground">Proficient</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="w-full bg-muted rounded-full h-2 mb-4">
+                                <div class="bg-secondary h-2 rounded-full" style="width: 72%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
+                                        <i class="fas fa-chart-line mr-1"></i>
+                                        Improving
+                                    </span>
+                                </div>
+                                <button class="text-secondary font-medium text-sm hover:underline">
+                                    Practice Now →
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Physics Card -->
+                        <div class="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-atom text-warning text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-foreground">Physics</h3>
+                                        <p class="text-sm text-muted-foreground">67 questions practiced</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-warning">58%</div>
+                                    <div class="text-xs text-muted-foreground">Developing</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="w-full bg-muted rounded-full h-2 mb-4">
+                                <div class="bg-warning h-2 rounded-full" style="width: 58%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                                        <i class="fas fa-target mr-1"></i>
+                                        Focus Needed
+                                    </span>
+                                </div>
+                                <button class="text-warning font-medium text-sm hover:underline">
+                                    Practice Now →
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- @END_MAP )) -->
+                    </div>
+                    <!-- @END_COMPONENT: SubjectCards -->
+                    
+                    <!-- Recent Activity & Performance Chart -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <!-- Recent Activity -->
+                        <div class="bg-card border border-border rounded-xl p-6">
+                            <h3 class="text-lg font-semibold text-foreground mb-4">Recent Activity</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-check text-success"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-foreground">Mathematics Quiz Completed</p>
+                                        <p class="text-xs text-muted-foreground">Scored 18/20 (90%) • 2 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-medal text-primary"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-foreground">Achievement Unlocked</p>
+                                        <p class="text-xs text-muted-foreground">Mathematics Master badge earned • 3 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-book-open text-secondary"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-foreground">English Practice Session</p>
+                                        <p class="text-xs text-muted-foreground">15 questions • 1 day ago</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Chart -->
+                        <div class="bg-card border border-border rounded-xl p-6">
+                            <h3 class="text-lg font-semibold text-foreground mb-4">Performance Trends</h3>
+                            <div class="relative h-48">
+                                <!-- Chart placeholder - would integrate with Chart.js or similar -->
+                                <!-- A simple chart visualization showing student performance over time -->
+                                <canvas id="performance-chart" class="w-full h-full"></canvas>
+                                <!-- Mock chart representation -->
+                                <div class="absolute inset-0 flex items-end justify-around pb-4">
+                                    <div class="bg-primary/20 rounded-t w-8" style="height: 40%"></div>
+                                    <div class="bg-primary/40 rounded-t w-8" style="height: 55%"></div>
+                                    <div class="bg-primary/60 rounded-t w-8" style="height: 70%"></div>
+                                    <div class="bg-primary/80 rounded-t w-8" style="height: 65%"></div>
+                                    <div class="bg-primary rounded-t w-8" style="height: 85%"></div>
+                                </div>
+                                <div class="absolute bottom-0 left-0 right-0 flex justify-around text-xs text-muted-foreground">
+                                    <span>Mon</span>
+                                    <span>Tue</span>
+                                    <span>Wed</span>
+                                    <span>Thu</span>
+                                    <span>Fri</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-muted-foreground mt-4">
+                                Your average score improved by 15% this week! 📈
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Achievements Section -->
+                    <div class="bg-card border border-border rounded-xl p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-foreground mb-4">Your Achievements</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="text-center p-4 bg-success/5 rounded-lg border border-success/20">
+                                <div class="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-medal text-success"></i>
+                                </div>
+                                <h4 class="font-semibold text-sm text-foreground">Mathematics Master</h4>
+                                <p class="text-xs text-muted-foreground">80%+ mastery achieved</p>
+                            </div>
+                            <div class="text-center p-4 bg-secondary/5 rounded-lg border border-secondary/20">
+                                <div class="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-fire text-secondary"></i>
+                                </div>
+                                <h4 class="font-semibold text-sm text-foreground">5-Day Streak</h4>
+                                <p class="text-xs text-muted-foreground">Consistent practice</p>
+                            </div>
+                            <div class="text-center p-4 bg-muted rounded-lg border border-border opacity-50">
+                                <div class="w-12 h-12 bg-muted-foreground/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-lock text-muted-foreground"></i>
+                                </div>
+                                <h4 class="font-semibold text-sm text-muted-foreground">Question Crusher</h4>
+                                <p class="text-xs text-muted-foreground">Answer 1000 questions</p>
+                            </div>
+                            <div class="text-center p-4 bg-muted rounded-lg border border-border opacity-50">
+                                <div class="w-12 h-12 bg-muted-foreground/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-trophy text-muted-foreground"></i>
+                                </div>
+                                <h4 class="font-semibold text-sm text-muted-foreground">Top 10</h4>
+                                <p class="text-xs text-muted-foreground">Reach top 10 ranking</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </section>
+            <!-- @END_COMPONENT: Dashboard -->
+            
+            <!-- Quiz Interface Section -->
+            <!-- @COMPONENT: QuizInterface [Interactive quiz taking interface] -->
+            <section class="py-8 hidden" id="quiz-section">
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    
+                    <!-- Quiz Header -->
+                    <div class="bg-card border border-border rounded-xl p-6 mb-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                            <div>
+                                <h2 class="text-2xl font-bold text-foreground mb-1">Mathematics Practice Quiz</h2>
+                                <p class="text-muted-foreground">JAMB Style Questions • 20 Questions</p>
+                            </div>
+                            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                                <div class="flex items-center space-x-2 text-secondary">
+                                    <i class="fas fa-clock"></i>
+                                    <span class="font-mono text-lg" data-bind="quiz.timeRemaining">28:45</span>
+                                </div>
+                                <button class="text-destructive hover:text-destructive/80">
+                                    <i class="fas fa-times"></i>
+                                    Exit Quiz
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-1 bg-muted rounded-full h-3">
+                                <div class="bg-primary h-3 rounded-full transition-all duration-300" style="width: 35%"></div>
+                            </div>
+                            <span class="text-sm font-medium text-muted-foreground">7/20</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Question Card -->
+                    <!-- @COMPONENT: QuestionCard [Individual question display] -->
+                    <div class="bg-card border border-border rounded-xl p-8 mb-6">
+                        <div class="flex items-start space-x-4 mb-6">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-primary-foreground font-semibold">7</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-foreground mb-4">
+                                    If log₁₀2 = 0.3010, find log₁₀8
+                                </h3>
+                                <div class="space-y-3">
+                                    <button class="quiz-option w-full text-left p-4 border-2 border-border hover:border-primary hover:bg-primary/5 rounded-lg transition-all">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-6 h-6 border-2 border-border rounded-full flex items-center justify-center">
+                                                <span class="text-sm font-semibold">A</span>
+                                            </div>
+                                            <span>0.9030</span>
+                                        </div>
+                                    </button>
+                                    <button class="quiz-option w-full text-left p-4 border-2 border-border hover:border-primary hover:bg-primary/5 rounded-lg transition-all">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-6 h-6 border-2 border-border rounded-full flex items-center justify-center">
+                                                <span class="text-sm font-semibold">B</span>
+                                            </div>
+                                            <span>0.9020</span>
+                                        </div>
+                                    </button>
+                                    <button class="quiz-option w-full text-left p-4 border-2 border-primary bg-primary/10 rounded-lg transition-all">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-6 h-6 border-2 border-primary bg-primary rounded-full flex items-center justify-center">
+                                                <span class="text-sm font-semibold text-primary-foreground">C</span>
+                                            </div>
+                                            <span class="font-medium">0.9010</span>
+                                        </div>
+                                    </button>
+                                    <button class="quiz-option w-full text-left p-4 border-2 border-border hover:border-primary hover:bg-primary/5 rounded-lg transition-all">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-6 h-6 border-2 border-border rounded-full flex items-center justify-center">
+                                                <span class="text-sm font-semibold">D</span>
+                                            </div>
+                                            <span>0.9000</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: QuestionCard -->
+                    
+                    <!-- Quiz Controls -->
+                    <div class="flex justify-between items-center">
+                        <button class="flex items-center space-x-2 px-6 py-3 border border-border rounded-lg hover:bg-accent transition-colors">
+                            <i class="fas fa-chevron-left"></i>
+                            <span>Previous</span>
+                        </button>
+                        <div class="flex space-x-2">
+                            <button class="px-4 py-2 border border-border rounded hover:bg-accent transition-colors">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                            <button class="px-4 py-2 border border-border rounded hover:bg-accent transition-colors">
+                                <i class="fas fa-flag"></i>
+                            </button>
+                        </div>
+                        <button class="flex items-center space-x-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                            <span>Next</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                </div>
+            </section>
+            <!-- @END_COMPONENT: QuizInterface -->
+            
+            <!-- Results Section -->
+            <!-- @COMPONENT: ResultsScreen [Quiz results and explanations] -->
+            <section class="py-8 hidden" id="results-section">
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    
+                    <!-- Results Header -->
+                    <div class="text-center mb-8">
+                        <div class="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-trophy text-success text-3xl"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-foreground mb-2">Quiz Completed!</h2>
+                        <p class="text-muted-foreground">Great job on your Mathematics practice session</p>
+                    </div>
+                    
+                    <!-- Score Card -->
+                    <div class="bg-gradient-to-r from-success to-primary rounded-xl p-8 text-white text-center mb-8">
+                        <div class="grid grid-cols-3 gap-8">
+                            <div>
+                                <div class="text-4xl font-bold mb-1">18/20</div>
+                                <div class="text-white/80">Questions Correct</div>
+                            </div>
+                            <div>
+                                <div class="text-4xl font-bold mb-1">90%</div>
+                                <div class="text-white/80">Accuracy</div>
+                            </div>
+                            <div>
+                                <div class="text-4xl font-bold mb-1">180</div>
+                                <div class="text-white/80">Energy Points</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Performance Breakdown -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-card border border-border rounded-xl p-6">
+                            <h3 class="text-lg font-semibold text-foreground mb-4">Time Analysis</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Total Time</span>
+                                    <span class="font-medium">22 minutes</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Average per Question</span>
+                                    <span class="font-medium">1.1 minutes</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Time Remaining</span>
+                                    <span class="font-medium text-success">8 minutes</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-card border border-border rounded-xl p-6">
+                            <h3 class="text-lg font-semibold text-foreground mb-4">Topic Breakdown</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-muted-foreground">Algebra</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-16 bg-muted rounded-full h-2">
+                                            <div class="bg-success h-2 rounded-full" style="width: 100%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">5/5</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-muted-foreground">Geometry</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-16 bg-muted rounded-full h-2">
+                                            <div class="bg-warning h-2 rounded-full" style="width: 80%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">4/5</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-muted-foreground">Calculus</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-16 bg-muted rounded-full h-2">
+                                            <div class="bg-success h-2 rounded-full" style="width: 90%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">9/10</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Wrong Answers with AI Explanations -->
+                    <div class="bg-card border border-border rounded-xl p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-foreground mb-6">Review Wrong Answers</h3>
+                        
+                        <!-- Wrong Answer 1 -->
+                        <div class="border border-destructive/20 rounded-lg p-6 mb-6 bg-destructive/5">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 bg-destructive/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-destructive font-semibold text-sm">3</span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-foreground mb-2">
+                                        Find the area of a circle with radius 7cm
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <p class="text-sm text-muted-foreground mb-1">Your Answer:</p>
+                                            <p class="text-destructive font-medium">B. 144π cm²</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-muted-foreground mb-1">Correct Answer:</p>
+                                            <p class="text-success font-medium">C. 49π cm²</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- AI Explanation -->
+                                    <div class="bg-accent rounded-lg p-4">
+                                        <div class="flex items-start space-x-2 mb-2">
+                                            <i class="fas fa-robot text-primary mt-1"></i>
+                                            <h5 class="font-semibold text-foreground">AI Explanation</h5>
+                                        </div>
+                                        <p class="text-muted-foreground text-sm mb-3">
+                                            The area of a circle is calculated using the formula A = πr². With radius r = 7cm:
+                                            <br/>• A = π × 7²
+                                            <br/>• A = π × 49
+                                            <br/>• A = 49π cm²
+                                            <br/><br/>
+                                            You may have confused this with the circumference formula (2πr) or made a calculation error.
+                                        </p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                                <i class="fas fa-lightbulb mr-1"></i>
+                                                Area Formula
+                                            </span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
+                                                <i class="fas fa-calculator mr-1"></i>
+                                                Practice More
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Wrong Answer 2 -->
+                        <div class="border border-destructive/20 rounded-lg p-6 bg-destructive/5">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 bg-destructive/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-destructive font-semibold text-sm">15</span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-foreground mb-2">
+                                        If 2x + 3 = 11, what is the value of x?
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <p class="text-sm text-muted-foreground mb-1">Your Answer:</p>
+                                            <p class="text-destructive font-medium">A. 3</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-muted-foreground mb-1">Correct Answer:</p>
+                                            <p class="text-success font-medium">B. 4</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- AI Explanation -->
+                                    <div class="bg-accent rounded-lg p-4">
+                                        <div class="flex items-start space-x-2 mb-2">
+                                            <i class="fas fa-robot text-primary mt-1"></i>
+                                            <h5 class="font-semibold text-foreground">AI Explanation</h5>
+                                        </div>
+                                        <p class="text-muted-foreground text-sm mb-3">
+                                            To solve 2x + 3 = 11, follow these steps:
+                                            <br/>• Subtract 3 from both sides: 2x = 11 - 3 = 8
+                                            <br/>• Divide both sides by 2: x = 8 ÷ 2 = 4
+                                            <br/><br/>
+                                            Remember: Always perform the same operation on both sides to maintain equality.
+                                        </p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                                <i class="fas fa-equals mr-1"></i>
+                                                Linear Equations
+                                            </span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
+                                                <i class="fas fa-redo mr-1"></i>
+                                                Try Again
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button class="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
+                            <i class="fas fa-redo mr-2"></i>
+                            Practice Similar Questions
+                        </button>
+                        <button class="border border-border text-foreground px-8 py-3 rounded-lg font-semibold hover:bg-accent transition-colors">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            View Detailed Analytics
+                        </button>
+                        <button class="border border-border text-foreground px-8 py-3 rounded-lg font-semibold hover:bg-accent transition-colors">
+                            <i class="fas fa-home mr-2"></i>
+                            Back to Dashboard
+                        </button>
+                    </div>
+                    
+                </div>
+            </section>
+            <!-- @END_COMPONENT: ResultsScreen -->
+            
+            <!-- Authentication Section -->
+            <!-- @COMPONENT: AuthForms [Login and signup forms] -->
+            <section class="py-12 bg-muted/30 hidden" id="auth-section">
+                <div class="max-w-md mx-auto px-4">
+                    
+                    <!-- Login Form -->
+                    <div class="bg-card border border-border rounded-xl p-8 shadow-lg" id="login-form">
+                        <div class="text-center mb-8">
+                            <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-graduation-cap text-primary text-2xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-foreground mb-2">Welcome Back</h2>
+                            <p class="text-muted-foreground">Sign in to continue your exam preparation</p>
+                        </div>
+                        
+                        <form class="space-y-6" data-implementation="Should integrate with Supabase authentication">
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Email or Phone</label>
+                                <input 
+                                    type="text" 
+                                    class="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent transition-colors bg-background text-foreground"
+                                    placeholder="Enter email or phone number"
+                                    data-mock="true"
+                                >
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Password</label>
+                                <div class="relative">
+                                    <input 
+                                        type="password" 
+                                        class="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent transition-colors bg-background text-foreground pr-12"
+                                        placeholder="Enter your password"
+                                        data-mock="true"
+                                    >
+                                    <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <i class="fas fa-eye text-muted-foreground"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="w-4 h-4 border border-input rounded text-primary focus:ring-primary">
+                                    <span class="ml-2 text-sm text-muted-foreground">Remember me</span>
+                                </label>
+                                <button type="button" class="text-sm text-primary hover:underline">
+                                    Forgot password?
+                                </button>
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                class="w-full bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                                data-event="click:handleLogin"
+                            >
+                                Sign In
+                            </button>
+                            
+                            <div class="text-center">
+                                <p class="text-sm text-muted-foreground">
+                                    Don't have an account? 
+                                    <button type="button" class="text-primary hover:underline font-medium">
+                                        Sign up here
+                                    </button>
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                    
+                </div>
+            </section>
+            <!-- @END_COMPONENT: AuthForms -->
+            
+        </main>
+        
+        <!-- @COMPONENT: BottomNavigation [Mobile navigation] -->
+        <!-- Mobile Bottom Navigation -->
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+            <div class="grid grid-cols-5 gap-1">
+                <button class="flex flex-col items-center justify-center py-2 px-1 text-primary">
+                    <i class="fas fa-home text-lg mb-1"></i>
+                    <span class="text-xs">Home</span>
+                </button>
+                <button class="flex flex-col items-center justify-center py-2 px-1 text-muted-foreground">
+                    <i class="fas fa-play text-lg mb-1"></i>
+                    <span class="text-xs">Practice</span>
+                </button>
+                <button class="flex flex-col items-center justify-center py-2 px-1 text-muted-foreground">
+                    <i class="fas fa-chart-line text-lg mb-1"></i>
+                    <span class="text-xs">Progress</span>
+                </button>
+                <button class="flex flex-col items-center justify-center py-2 px-1 text-muted-foreground">
+                    <i class="fas fa-trophy text-lg mb-1"></i>
+                    <span class="text-xs">Ranks</span>
+                </button>
+                <button class="flex flex-col items-center justify-center py-2 px-1 text-muted-foreground">
+                    <i class="fas fa-user text-lg mb-1"></i>
+                    <span class="text-xs">Profile</span>
+                </button>
+            </div>
+        </nav>
+        <!-- @END_COMPONENT: BottomNavigation -->
+        
+    </div>
+    <!-- @END_COMPONENT: App -->
+    
+    <script>
+    (function() {
+        // TODO: Implement business logic, API calls, and state management
+        
+        // Mock data for demonstration
+        const mockUserData = {
+            firstName: "Kemi",
+            initials: "KA",
+            energyPoints: 2450,
+            stats: {
+                questionsAnswered: 1247,
+                accuracy: "78%",
+                studyHours: "42h",
+                rank: "#23"
+            }
+        };
+        
+        // Mock quiz timer functionality
+        let quizTimer;
+        let timeRemaining = 30 * 60; // 30 minutes in seconds
+        
+        function updateTimer() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            const timerElement = document.querySelector('[data-bind="quiz.timeRemaining"]');
+            if (timerElement) {
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            if (timeRemaining > 0) {
+                timeRemaining--;
+            } else {
+                clearInterval(quizTimer);
+                // TODO: Auto-submit quiz when time runs out
+            }
+        }
+        
+        // Initialize timer for quiz section
+        function startQuizTimer() {
+            clearInterval(quizTimer);
+            quizTimer = setInterval(updateTimer, 1000);
+        }
+        
+        // Mock offline detection
+        function updateOfflineStatus() {
+            const offlineIndicator = document.getElementById('offline-indicator');
+            if (!navigator.onLine && offlineIndicator) {
+                offlineIndicator.classList.remove('hidden');
+            } else if (offlineIndicator) {
+                offlineIndicator.classList.add('hidden');
+            }
+        }
+        
+        // Event listeners for network status
+        window.addEventListener('online', updateOfflineStatus);
+        window.addEventListener('offline', updateOfflineStatus);
+        
+        // Mock quiz option selection
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.quiz-option')) {
+                // Remove selection from other options
+                document.querySelectorAll('.quiz-option').forEach(option => {
+                    option.classList.remove('border-primary', 'bg-primary/10');
+                    option.classList.add('border-border');
+                    const circle = option.querySelector('div div');
+                    circle.classList.remove('border-primary', 'bg-primary');
+                    circle.classList.add('border-border');
+                    const text = circle.querySelector('span');
+                    text.classList.remove('text-primary-foreground');
+                });
+                
+                // Add selection to clicked option
+                const selectedOption = e.target.closest('.quiz-option');
+                selectedOption.classList.remove('border-border');
+                selectedOption.classList.add('border-primary', 'bg-primary/10');
+                const circle = selectedOption.querySelector('div div');
+                circle.classList.remove('border-border');
+                circle.classList.add('border-primary', 'bg-primary');
+                const text = circle.querySelector('span');
+                text.classList.add('text-primary-foreground');
+            }
+        });
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateOfflineStatus();
+            
+            // Mock performance chart using canvas
+            const canvas = document.getElementById('performance-chart');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                // TODO: Integrate with Chart.js or similar charting library
+                // This is just a placeholder
+            }
+        });
+        
+        // Mock section switching (would be handled by React Router in actual app)
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+            
+            // Start timer if quiz section
+            if (sectionId === 'quiz-section') {
+                startQuizTimer();
+            }
+        }
+        
+        // Expose section switching for demo purposes
+        window.PrepNaija = {
+            showSection: showSection,
+            mockUserData: mockUserData
+        };
+        
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+nohup: ignoring input
+
+> rest-express@1.0.0 dev:all
+> concurrently "npm run dev" "npm run dev:front" --names "backend,frontend" --prefix-colors "blue,green"
+
+[backend] 
+[backend] > rest-express@1.0.0 dev
+[backend] > NODE_ENV=development tsx server/index.ts
+[backend] 
+[frontend] 
+[frontend] > rest-express@1.0.0 dev:front
+[frontend] > vite
+[frontend] 
+[frontend] 
+[frontend]   VITE v5.4.19  ready in 922 ms
+[frontend] 
+[frontend]   ➜  Local:   http://localhost:5173/
+[frontend]   ➜  Network: use --host to expose
+[backend] ✅ Resolved aws-1-us-west-1.pooler.supabase.com to IPv4: 54.241.91.151
+[backend] ✅ Connected to Supabase DB via IPv4
+[backend] Supabase auth setup complete
+[backend] 2:14:16 AM [express] serving on port 5000
+[backend] Questions already seeded
+[backend] 2:14:56 AM [express] GET /api/auth/user 401 in 14ms :: {"error":"No token provided"}
+[backend] 2:15:20 AM [express] POST /api/auth/register 200 in 2926ms :: {"user":{"id":"7646cdc7-62c9-4e1a-8a2a...
+[backend] 2:15:32 AM [express] POST /api/auth/register 400 in 1138ms :: {"error":"For security purposes, you c...
+[backend] 2:15:57 AM [express] POST /api/auth/login 401 in 1324ms :: {"error":"Email not confirmed"}
+[frontend] 2:22:01 AM [vite] vite.config.ts changed, restarting server...
+[frontend] 2:22:01 AM [vite] server restarted.
+[frontend] npm run dev:front exited with code SIGTERM
+[backend] npm run dev exited with code SIGTERM

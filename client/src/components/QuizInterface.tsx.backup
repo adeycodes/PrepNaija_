@@ -1,0 +1,289 @@
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { useQuiz } from "@/hooks/useQuiz";
+import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface QuizInterfaceProps {
+  subject: string;
+  examType?: string;
+  onQuizComplete: (sessionId: string) => void;
+}
+
+export default function QuizInterface({ subject, examType = 'JAMB', onQuizComplete }: QuizInterfaceProps) {
+  console.log('QuizInterface - Props:', { subject, examType });
+  
+  const {
+    quizState,
+    isLoading,
+    error,
+    loadQuiz,
+    selectAnswer,
+    nextQuestion,
+    previousQuestion,
+    submitQuiz,
+    getCurrentQuestion,
+    getProgress,
+    formatTime,
+    isSubmitting,
+  } = useQuiz(subject, examType);
+
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+
+  const currentQuestion = getCurrentQuestion();
+  const progress = getProgress();
+const selectedAnswer = currentQuestion ? quizState.selectedAnswers[currentQuestion.id.toString()] : null;
+
+  // Load quiz on mount
+  useEffect(() => {
+    if (quizState.questions.length === 0 && !isLoading) {
+      loadQuiz();
+    }
+  }, [loadQuiz, quizState.questions.length, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="quiz-interface">
+        <Card className="max-w-4xl mx-auto">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="loading-spinner w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading {subject} quiz...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="quiz-interface">
+        <Card className="max-w-4xl mx-auto">
+          <CardContent className="text-center py-12">
+            <XCircle className="mx-auto text-destructive mb-4" size={48} />
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={loadQuiz} data-testid="button-retry-quiz">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="quiz-interface">
+        <Card className="max-w-4xl mx-auto">
+          <CardContent className="text-center py-12">
+            <XCircle className="mx-auto text-destructive mb-4" size={48} />
+            <p className="text-destructive mb-4">No questions loaded for this subject. Please try again.</p>
+            <Button onClick={loadQuiz} data-testid="button-retry-quiz">
+              Load Questions
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const handleSubmit = () => {
+    if (progress.answered < progress.total) {
+      setShowConfirmSubmit(true);
+    } else {
+      submitQuiz();
+    }
+  };
+
+  const confirmSubmit = () => {
+    setShowConfirmSubmit(false);
+    submitQuiz();
+  };
+
+  const options = [
+    { key: 'A', text: currentQuestion.options.A },
+    { key: 'B', text: currentQuestion.options.B },
+    { key: 'C', text: currentQuestion.options.C },
+    { key: 'D', text: currentQuestion.options.D },
+  ];
+
+  return (
+    <div className="quiz-interface max-w-4xl mx-auto space-y-6">
+      {/* Quiz Header */}
+      <Card className="quiz-timer">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Badge variant="secondary">
+                {subject} Quiz ({examType})
+              </Badge>
+              <div className="flex items-center space-x-2 text-sm text-primary-foreground">
+                <span>Question {quizState.currentQuestionIndex + 1} of {quizState.questions.length}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-primary-foreground">
+                <Clock size={16} />
+                <span className="font-mono text-lg" data-testid="text-timer">
+                  {formatTime(quizState.timeRemaining)}
+                </span>
+              </div>
+              <div className="text-sm text-primary-foreground">
+                {progress.answered}/{progress.total} answered
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-3">
+            <Progress 
+              value={(progress.answered / progress.total) * 100} 
+              className="h-2 quiz-progress-fill" 
+              style={{'--progress-width': `${(progress.answered / progress.total) * 100}%`} as React.CSSProperties}
+              data-testid="progress-quiz-completion"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Question Card */}
+      <Card className="question-card">
+        <CardHeader>
+          <CardTitle className="text-xl leading-relaxed">
+            {currentQuestion.questionText}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Options */}
+          <div className="space-y-3">
+            {options.map((option) => (
+              <button
+                key={option.key}
+                onClick={() => selectAnswer(currentQuestion.id.toString(), option.key)}
+                className={cn(
+                  "option-button w-full p-4 text-left rounded-lg border-2 btn-animate",
+                  selectedAnswer === option.key
+                    ? "selected border-primary bg-primary text-primary-foreground success-bounce"
+                    : "border-border bg-card hover:border-primary hover:bg-muted"
+                )}
+                disabled={quizState.isSubmitted}
+                data-testid={`option-${option.key.toLowerCase()}`}
+              >
+                <div className="flex items-start space-x-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full border flex items-center justify-center text-sm font-semibold">
+                    {option.key}
+                  </span>
+                  <span className="flex-1">{option.text}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-6">
+            <Button
+              variant="outline"
+              onClick={previousQuestion}
+              disabled={quizState.currentQuestionIndex === 0 || quizState.isSubmitted}
+              className="btn-animate"
+              data-testid="button-previous-question"
+            >
+              <ChevronLeft size={16} className="mr-1" />
+              Previous
+            </Button>
+
+            <div className="flex items-center space-x-2">
+              {/* Question Navigator */}
+              <div className="hidden md:flex items-center space-x-1">
+                {quizState.questions.slice(0, 10).map((q, index) => (
+                  <button
+                    key={q.id}
+                    onClick={() => {
+                      const targetIndex = quizState.questions.findIndex(question => question.id === q.id);
+                      if (targetIndex !== -1) {
+                        // This would call navigateToQuestion from useQuiz
+                        // For now, we'll just highlight current
+                      }
+                    }}
+                    className={cn(
+                      "w-8 h-8 rounded text-xs font-semibold transition-colors",
+                      index === quizState.currentQuestionIndex
+                        ? "bg-primary text-primary-foreground"
+                        : quizState.selectedAnswers[q.id.toString()]
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-muted"
+                    )}
+                    data-testid={`question-nav-${index + 1}`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+                {quizState.questions.length > 10 && (
+                  <span className="text-muted-foreground text-xs">...</span>
+                )}
+              </div>
+
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting || quizState.isSubmitted}
+                className="bg-accent text-accent-foreground hover:bg-accent/90 btn-animate"
+                data-testid="button-submit-quiz"
+              >
+                <Flag size={16} className="mr-2" />
+                {isSubmitting ? "Submitting..." : "Submit Quiz"}
+              </Button>
+            </div>
+
+            <Button
+              onClick={nextQuestion}
+              disabled={quizState.currentQuestionIndex === quizState.questions.length - 1 || quizState.isSubmitted}
+              className="btn-animate"
+              data-testid="button-next-question"
+            >
+              Next
+              <ChevronRight size={16} className="ml-1" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Confirmation Dialog */}
+      {showConfirmSubmit && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Submit Quiz?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-6">
+                You have answered {progress.answered} out of {progress.total} questions. 
+                Are you sure you want to submit now?
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowConfirmSubmit(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-submit"
+                >
+                  Continue Quiz
+                </Button>
+                <Button
+                  onClick={confirmSubmit}
+                  className="flex-1"
+                  data-testid="button-confirm-submit"
+                >
+                  Submit Now
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

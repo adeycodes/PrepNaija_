@@ -1,0 +1,651 @@
+# Complete Replit Agent Prompt: PrepNaija MVP
+## Nigerian Exam Preparation Platform
+
+Build a complete Nigerian exam preparation platform called **PrepNaija** with modern React frontend and Supabase backend. This is an MVP for Nigerian students preparing for JAMB, WAEC, and NECO exams.
+
+---
+
+## 🎯 **PROJECT REQUIREMENTS**
+
+### **Core Features to Build:**
+1. **User Authentication System** (Sign up, Login, Profile management)
+2. **Subject Selection** (Mathematics, English, Physics, Chemistry, Biology) 
+3. **Quiz Engine** (Random questions, timed sessions, instant feedback)
+4. **Khan Academy-style Progress Tracking** (Mastery system, visual progress)
+5. **Performance Dashboard** (Score history, subject strengths/weaknesses)
+6. **SMS Integration** (Study reminders via Termii API)
+7. **AI-powered Explanations** (Using OpenAI for wrong answers)
+8. **Offline Mode** (Cache questions for poor network areas)
+
+---
+
+## 🏗️ **TECH STACK**
+
+- **Frontend:** React 18 + TypeScript + Tailwind CSS
+- **Backend:** Supabase (Database + Auth + Real-time + Storage)
+- **Styling:** Tailwind CSS with mobile-first responsive design
+- **State Management:** React Context API + useState/useReducer
+- **API Integration:** Axios for external APIs
+- **SMS Service:** Termii API (Nigerian SMS provider)
+- **AI Service:** OpenAI API (for explanations)
+- **Deployment:** Vercel (frontend) + Supabase (backend)
+
+---
+
+## 📊 **DATABASE SCHEMA (SUPABASE)**
+
+```sql
+-- Users table (extends Supabase auth.users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT,
+  full_name TEXT,
+  selected_subjects TEXT[], -- array of subjects
+  target_exam TEXT DEFAULT 'JAMB', -- JAMB, WAEC, NECO
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Questions bank
+CREATE TABLE questions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  subject TEXT NOT NULL, -- Mathematics, English, Physics, etc.
+  exam_type TEXT NOT NULL, -- JAMB, WAEC, NECO
+  question_text TEXT NOT NULL,
+  option_a TEXT NOT NULL,
+  option_b TEXT NOT NULL,
+  option_c TEXT NOT NULL,
+  option_d TEXT NOT NULL,
+  correct_answer CHAR(1) NOT NULL, -- A, B, C, D
+  explanation TEXT,
+  topic TEXT, -- Algebra, Grammar, Mechanics, etc.
+  difficulty_level INTEGER DEFAULT 1, -- 1-5 scale
+  year INTEGER, -- exam year
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Quiz sessions
+CREATE TABLE quiz_sessions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id),
+  subject TEXT NOT NULL,
+  total_questions INTEGER NOT NULL,
+  correct_answers INTEGER NOT NULL,
+  wrong_answers INTEGER NOT NULL,
+  score_percentage DECIMAL(5,2),
+  time_spent INTEGER, -- in seconds
+  questions_answered JSONB, -- array of question IDs and user answers
+  completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User progress tracking (Khan Academy style)
+CREATE TABLE user_progress (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id),
+  subject TEXT NOT NULL,
+  topic TEXT,
+  questions_attempted INTEGER DEFAULT 0,
+  questions_correct INTEGER DEFAULT 0,
+  mastery_level DECIMAL(3,2) DEFAULT 0, -- 0.00 to 1.00 (mastery achieved at 0.80)
+  last_practiced TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  energy_points INTEGER DEFAULT 0, -- gamification
+  UNIQUE(user_id, subject, topic)
+);
+
+-- SMS notifications log
+CREATE TABLE sms_notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id),
+  phone_number TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'pending', -- pending, sent, failed
+  sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Row Level Security
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sms_notifications ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can view own quiz sessions" ON quiz_sessions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create own quiz sessions" ON quiz_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own progress" ON user_progress FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own progress" ON user_progress FOR ALL USING (auth.uid() = user_id);
+```
+
+---
+
+## 🎨 **FRONTEND STRUCTURE**
+
+### **Component Architecture:**
+```
+src/
+├── components/
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   ├── SignupForm.tsx
+│   │   └── ProfileSetup.tsx
+│   ├── quiz/
+│   │   ├── QuizInterface.tsx
+│   │   ├── QuestionCard.tsx
+│   │   ├── ResultsScreen.tsx
+│   │   └── ProgressBar.tsx
+│   ├── dashboard/
+│   │   ├── Dashboard.tsx
+│   │   ├── ProgressChart.tsx
+│   │   ├── SubjectCards.tsx
+│   │   └── PerformanceStats.tsx
+│   ├── common/
+│   │   ├── Header.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── LoadingSpinner.tsx
+│   │   └── Button.tsx
+│   └── offline/
+│       ├── OfflineIndicator.tsx
+│       └── CachedQuestions.tsx
+├── pages/
+│   ├── Landing.tsx
+│   ├── Auth.tsx
+│   ├── Dashboard.tsx
+│   ├── Quiz.tsx
+│   ├── Results.tsx
+│   └── Profile.tsx
+├── hooks/
+│   ├── useAuth.tsx
+│   ├── useQuiz.tsx
+│   ├── useProgress.tsx
+│   └── useOffline.tsx
+├── services/
+│   ├── supabase.ts
+│   ├── questionService.ts
+│   ├── smsService.ts
+│   └── openaiService.ts
+├── utils/
+│   ├── constants.ts
+│   ├── helpers.ts
+│   └── validators.ts
+└── types/
+    └── index.ts
+```
+
+---
+
+## 🚀 **KEY FEATURES IMPLEMENTATION**
+
+### **1. Authentication Flow:**
+- Sign up with email/phone number
+- Email verification via Supabase
+- Profile setup (name, subjects, target exam)
+- Persistent login state
+- Password reset functionality
+
+### **2. Quiz Engine Logic:**
+```typescript
+// Quiz mechanics
+const QUIZ_CONFIG = {
+  questionsPerSession: 20,
+  timeLimit: 30, // minutes
+  passingScore: 60, // percentage
+  masteryThreshold: 80 // percentage for mastery
+};
+
+// Question selection algorithm
+const selectQuestions = (subject: string, difficulty: number) => {
+  // Random selection with difficulty weighting
+  // Avoid recently answered questions
+  // Prioritize weak topics
+};
+```
+
+### **3. Progress Tracking (Khan Academy Style):**
+- Visual progress bars for each subject/topic
+- Mastery system (80% accuracy = mastery achieved)
+- Energy points system (10 points per correct answer)
+- Streak tracking (consecutive days practiced)
+- Subject strength radar chart
+
+### **4. SMS Integration:**
+```typescript
+// Daily study reminders
+const sendStudyReminder = async (phone: string, name: string) => {
+  const message = `Hi ${name}! 📚 Ready for your daily JAMB practice? Complete 10 questions today and earn energy points! - PrepNaija`;
+  // Send via Termii API
+};
+```
+
+### **5. AI Explanations:**
+- When user gets question wrong, show AI-generated explanation
+- Use OpenAI API to explain why answer is correct
+- Include study tips and related concepts
+- Store explanations to reduce API calls
+
+### **6. Offline Mode:**
+- Cache 50 questions per subject locally
+- Show offline indicator when network is poor
+- Sync progress when connection restored
+- Download questions for selected subjects
+
+---
+
+## 📱 **UI/UX REQUIREMENTS**
+
+### **Design System:**
+- **Colors:** Green primary (#10B981), Blue secondary (#3B82F6), Red for errors (#EF4444)
+- **Typography:** Inter font family, clear hierarchy
+- **Mobile-first:** All components must work perfectly on phones
+- **Dark mode:** Toggle between light/dark themes
+- **Nigerian context:** Use familiar language and examples
+
+### **Key Screens:**
+1. **Landing Page:** Hero section, features, testimonials, pricing
+2. **Auth Pages:** Simple forms with social proof
+3. **Dashboard:** Progress overview, subject cards, recent activity
+4. **Quiz Interface:** Clean question display, timer, progress bar
+5. **Results Screen:** Score, explanations, next steps
+
+### **Responsive Breakpoints:**
+```css
+/* Mobile first approach */
+sm: '640px'   // Small phones
+md: '768px'   // Tablets  
+lg: '1024px'  // Desktop
+xl: '1280px'  // Large desktop
+```
+
+---
+
+## 🔗 **API ENDPOINTS STRUCTURE**
+
+### **Authentication:**
+- `POST /auth/signup` - User registration
+- `POST /auth/login` - User login
+- `GET /auth/user` - Get current user
+- `PUT /auth/profile` - Update profile
+
+### **Questions & Quiz:**
+- `GET /questions/random/:subject/:count` - Get random questions
+- `POST /quiz/start` - Start new quiz session
+- `POST /quiz/submit` - Submit quiz answers
+- `GET /quiz/history` - Get user's quiz history
+
+### **Progress & Analytics:**
+- `GET /progress/:userId` - Get user progress
+- `POST /progress/update` - Update progress after quiz
+- `GET /analytics/performance` - Get performance insights
+
+### **SMS & Notifications:**
+- `POST /sms/reminder` - Send study reminder
+- `POST /sms/results` - Send quiz results
+- `GET /notifications` - Get user notifications
+
+---
+
+## 🎮 **GAMIFICATION FEATURES**
+
+### **Point System:**
+- 10 points per correct answer
+- 50 bonus points for completing quiz
+- 100 bonus points for achieving topic mastery
+- 200 bonus points for daily streak
+
+### **Achievements/Badges:**
+- "First Quiz" - Complete your first quiz
+- "Mathematics Master" - Achieve 80%+ in Mathematics
+- "Streak Warrior" - Practice for 7 consecutive days
+- "Question Crusher" - Answer 1000 questions correctly
+
+### **Leaderboard:**
+- Weekly rankings among friends/classmates
+- Subject-specific leaderboards
+- School-wide competitions
+
+---
+
+## 📈 **SAMPLE DATA & AUTHENTIC QUESTION SOURCING**
+
+### **Question Database Strategy:**
+Build a robust question bank using multiple verified sources and AI enhancement:
+
+#### **Phase 1: Foundation Questions (50 per subject)**
+Create starter questions based on official examination patterns:
+
+```sql
+-- Sample authentic-style questions for initial database
+INSERT INTO questions (subject, exam_type, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, topic, difficulty_level, year, source_type) VALUES 
+
+-- Mathematics (JAMB style)
+('Mathematics', 'JAMB', 'If log₁₀2 = 0.3010, find log₁₀8', '0.9030', '0.9020', '0.9010', '0.9000', 'A', 'log₁₀8 = log₁₀(2³) = 3log₁₀2 = 3(0.3010) = 0.9030', 'Logarithms', 3, 2024, 'original'),
+
+('Mathematics', 'JAMB', 'The ages of Kemi and Tolu are in the ratio 2:3. If Kemi is 12 years old, how old is Tolu?', '18 years', '15 years', '20 years', '16 years', 'A', 'If Kemi:Tolu = 2:3 and Kemi = 12, then 2x = 12, so x = 6. Therefore Tolu = 3x = 3(6) = 18 years', 'Ratio and Proportion', 2, 2024, 'original'),
+
+-- English (WAEC style)  
+('English', 'WAEC', 'Choose the option that best completes the gap: The principal _____ the students for their poor performance.', 'berated', 'bereaved', 'betrayed', 'beloved', 'A', 'Berated means to scold or criticize angrily, which fits the context of poor performance', 'Vocabulary', 2, 2024, 'original'),
+
+('English', 'WAEC', 'Which of the following sentences is correct?', 'Neither John nor his friends were present', 'Neither John nor his friends was present', 'Either John or his friends were present', 'Neither John or his friends were present', 'B', 'With "neither...nor" construction, the verb agrees with the subject closest to it. Since "John" (singular) is closest, we use "was"', 'Grammar', 3, 2024, 'original');
+```
+
+#### **Phase 2: AI Question Generation System**
+Implement AI-powered question generation based on verified patterns:
+
+```typescript
+const generateQuestionVariations = async (baseQuestion: Question) => {
+  const prompt = `
+    You are a Nigerian examination expert. Based on this verified ${baseQuestion.examType} ${baseQuestion.subject} question:
+    
+    Question: "${baseQuestion.questionText}"
+    Topic: ${baseQuestion.topic}
+    Difficulty: ${baseQuestion.difficultyLevel}/5
+    
+    Generate 3 similar questions that:
+    1. Test the same concept but with different scenarios
+    2. Use Nigerian context (names, places, currency when relevant)
+    3. Follow official ${baseQuestion.examType} format exactly
+    4. Include 4 options (A, B, C, D) with only one correct answer
+    5. Provide detailed step-by-step explanations
+    6. Match the same difficulty level
+    7. Use appropriate Nigerian English
+    
+    Format as JSON array with fields: questionText, optionA, optionB, optionC, optionD, correctAnswer, explanation
+  `;
+  
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.7,
+    max_tokens: 1000
+  });
+  
+  return JSON.parse(response.choices[0].message.content);
+};
+```
+
+#### **Phase 3: Community Question Contribution System**
+Build a teacher and student contribution portal:
+
+```typescript
+// Teacher contribution interface
+const TeacherQuestionPortal = () => {
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold mb-4">Contribute Questions</h3>
+      <form onSubmit={handleQuestionSubmission}>
+        <div className="space-y-4">
+          <select name="subject" required>
+            <option value="">Select Subject</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="English">English</option>
+            <option value="Physics">Physics</option>
+          </select>
+          
+          <select name="examType" required>
+            <option value="">Select Exam Type</option>
+            <option value="JAMB">JAMB</option>
+            <option value="WAEC">WAEC</option>
+            <option value="NECO">NECO</option>
+          </select>
+          
+          <textarea 
+            name="questionText" 
+            placeholder="Enter question text..." 
+            rows={3} 
+            required 
+          />
+          
+          <div className="grid grid-cols-2 gap-2">
+            <input name="optionA" placeholder="Option A" required />
+            <input name="optionB" placeholder="Option B" required />
+            <input name="optionC" placeholder="Option C" required />
+            <input name="optionD" placeholder="Option D" required />
+          </div>
+          
+          <select name="correctAnswer" required>
+            <option value="">Correct Answer</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+          
+          <textarea 
+            name="explanation" 
+            placeholder="Detailed explanation of the answer..." 
+            rows={3} 
+            required 
+          />
+          
+          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
+            Submit Question for Review
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+```
+
+### **Question Verification System:**
+```typescript
+const questionVerificationWorkflow = {
+  // Step 1: AI Quality Check
+  aiReview: async (question: Question) => {
+    const prompt = `
+      Review this ${question.examType} ${question.subject} question for:
+      1. Grammatical correctness
+      2. Mathematical accuracy (if applicable)
+      3. Appropriate difficulty level
+      4. Clear and unambiguous options
+      5. Correct answer verification
+      6. Quality of explanation
+      
+      Question: ${question.questionText}
+      Options: ${JSON.stringify(question.options)}
+      Correct Answer: ${question.correctAnswer}
+      Explanation: ${question.explanation}
+      
+      Return JSON: {isValid: boolean, issues: string[], suggestions: string[]}
+    `;
+    
+    return await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3
+    });
+  },
+  
+  // Step 2: Expert Teacher Review
+  teacherReview: async (questionId: string) => {
+    // Assign to qualified teacher for manual review
+    // Track approval/rejection with feedback
+  },
+  
+  // Step 3: Student Testing
+  studentTesting: async (questionId: string) => {
+    // A/B test new questions with small student groups
+    // Measure difficulty and engagement
+  }
+};
+```
+
+### **Authentic Source Integration:**
+```typescript
+const authenticSources = {
+  // Official past questions (manual input)
+  officialQuestions: {
+    sources: ['JAMB Official', 'WAEC Specimen', 'NECO Past Papers'],
+    inputMethod: 'manual_verification',
+    creditRequirement: true
+  },
+  
+  // Textbook references (transformed)
+  textbookQuestions: {
+    sources: ['New General Mathematics', 'Effective English', 'New School Chemistry'],
+    transformation: 'create_variations', // Don't copy directly
+    addedValue: 'enhanced_explanations'
+  },
+  
+  // School partnerships
+  schoolPartnership: {
+    agreement: 'question_sharing',
+    benefit: 'free_platform_access',
+    verification: 'teacher_approved'
+  }
+};
+```
+
+### **Question Quality Metrics:**
+```sql
+-- Track question performance
+CREATE TABLE question_analytics (
+  question_id UUID REFERENCES questions(id),
+  total_attempts INTEGER DEFAULT 0,
+  correct_attempts INTEGER DEFAULT 0,
+  difficulty_rating DECIMAL(3,2), -- calculated from user performance
+  user_feedback JSONB, -- student ratings and comments
+  time_to_answer_avg INTEGER, -- average time in seconds
+  last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### **Nigerian Educational Context:**
+Ensure all questions reflect Nigerian educational system:
+
+```typescript
+const nigerianContextExamples = {
+  mathematics: [
+    "Kemi bought 3 tubers of yam for ₦450...",
+    "A bus travels from Lagos to Abuja covering 760km...",
+    "In a school of 1,200 students, 60% are boys..."
+  ],
+  
+  english: [
+    "The harmattan season affects visibility...",
+    "Choose the correct pronunciation of 'vehicle'...",
+    "Complete: 'The masquerade _____ through the village'"
+  ],
+  
+  sciences: [
+    "Cassava contains which primary nutrient?",
+    "The Guinea Savanna vegetation is characterized by...",
+    "Which mineral is abundant in Jos plateau?"
+  ]
+};
+```
+
+### **Sample Users for Testing:**
+- Student profiles from different regions (Lagos, Kano, Port Harcourt)
+- Various academic backgrounds and performance levels
+- Different device types (Android phones, basic smartphones)
+- Varying internet connectivity patterns
+
+### **Content Delivery Strategy:**
+```typescript
+const contentDelivery = {
+  // Offline question caching
+  offlineStorage: {
+    questionsPerSubject: 50,
+    updateFrequency: 'weekly',
+    compressionType: 'gzip'
+  },
+  
+  // Progressive question loading
+  loadingStrategy: {
+    initial: 20, // questions loaded on app start
+    onDemand: 10, // loaded as user progresses
+    prefetch: 30 // loaded in background
+  },
+  
+  // Regional customization
+  regionalContent: {
+    northernNigeria: 'include_hausa_names',
+    southernNigeria: 'include_yoruba_igbo_names',
+    middleBelt: 'mixed_cultural_context'
+  }
+};
+```
+
+---
+
+## 🔧 **ENVIRONMENT SETUP**
+
+### **Required Environment Variables:**
+```env
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+REACT_APP_OPENAI_API_KEY=your_openai_key
+REACT_APP_TERMII_API_KEY=your_termii_key
+REACT_APP_APP_ENV=development
+```
+
+### **Package.json Dependencies:**
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
+    "typescript": "^4.9.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "axios": "^1.6.0",
+    "tailwindcss": "^3.3.0",
+    "lucide-react": "^0.263.1",
+    "recharts": "^2.8.0",
+    "react-hook-form": "^7.47.0",
+    "react-hot-toast": "^2.4.1"
+  }
+}
+```
+
+---
+
+## 🚀 **DEPLOYMENT INSTRUCTIONS**
+
+### **Frontend (Vercel):**
+1. Connect GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy with automatic builds on git push
+
+### **Backend (Supabase):**
+1. Create new Supabase project
+2. Run database migrations
+3. Set up Row Level Security policies
+4. Configure authentication providers
+
+### **Domain Setup:**
+- Custom domain: prepnaija.com
+- SSL certificate (automatic via Vercel)
+- CDN optimization for Nigerian users
+
+---
+
+## ✅ **SUCCESS CRITERIA**
+
+The MVP is complete when:
+1. ✅ User can register, login, and set up profile
+2. ✅ User can select subjects and start quiz
+3. ✅ Quiz engine serves random questions with timer
+4. ✅ Results screen shows score and explanations
+5. ✅ Dashboard displays progress and statistics
+6. ✅ SMS reminders work for Nigerian phone numbers
+7. ✅ Offline mode caches questions locally
+8. ✅ Responsive design works on all devices
+9. ✅ Database is properly secured with RLS
+10. ✅ App is deployed and accessible online
+
+---
+
+## 🎯 **POST-MVP FEATURES (Future Iterations)**
+- Video explanations for complex topics
+- Live group study sessions
+- School partnership dashboard
+- Advanced analytics and insights
+- Social features (study groups, challenges)
+- Payment integration (Paystack/Flutterwave)
+
+---
+
+**Build this as a production-ready MVP that can handle 1000+ concurrent users and serve as the foundation for scaling to 10,000+ students. Focus on performance, security, and user experience. Make it feel like a polished, professional educational platform that Nigerian students will love to use.**

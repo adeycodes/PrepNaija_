@@ -1,0 +1,403 @@
+# Complete Replit Agent Prompt: PrepNaija MVP
+## Nigerian Exam Preparation Platform
+
+Build a complete Nigerian exam preparation platform called **PrepNaija** with modern React frontend and Supabase backend. This is an MVP for Nigerian students preparing for JAMB, WAEC, and NECO exams.
+
+---
+
+## 🎯 **PROJECT REQUIREMENTS**
+
+### **Core Features to Build:**
+1. **User Authentication System** (Sign up, Login, Profile management)
+2. **Subject Selection** (Mathematics, English, Physics, Chemistry, Biology) 
+3. **Quiz Engine** (Random questions, timed sessions, instant feedback)
+4. **Khan Academy-style Progress Tracking** (Mastery system, visual progress)
+5. **Performance Dashboard** (Score history, subject strengths/weaknesses)
+6. **SMS Integration** (Study reminders via Termii API)
+7. **AI-powered Explanations** (Using OpenAI for wrong answers)
+8. **Offline Mode** (Cache questions for poor network areas)
+
+---
+
+## 🏗️ **TECH STACK**
+
+- **Frontend:** React 18 + TypeScript + Tailwind CSS
+- **Backend:** Supabase (Database + Auth + Real-time + Storage)
+- **Styling:** Tailwind CSS with mobile-first responsive design
+- **State Management:** React Context API + useState/useReducer
+- **API Integration:** Axios for external APIs
+- **SMS Service:** Termii API (Nigerian SMS provider)
+- **AI Service:** OpenAI API (for explanations)
+- **Deployment:** Vercel (frontend) + Supabase (backend)
+
+---
+
+## 📊 **DATABASE SCHEMA (SUPABASE)**
+
+```sql
+-- Users table (extends Supabase auth.users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT,
+  full_name TEXT,
+  selected_subjects TEXT[], -- array of subjects
+  target_exam TEXT DEFAULT 'JAMB', -- JAMB, WAEC, NECO
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Questions bank
+CREATE TABLE questions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  subject TEXT NOT NULL, -- Mathematics, English, Physics, etc.
+  exam_type TEXT NOT NULL, -- JAMB, WAEC, NECO
+  question_text TEXT NOT NULL,
+  option_a TEXT NOT NULL,
+  option_b TEXT NOT NULL,
+  option_c TEXT NOT NULL,
+  option_d TEXT NOT NULL,
+  correct_answer CHAR(1) NOT NULL, -- A, B, C, D
+  explanation TEXT,
+  topic TEXT, -- Algebra, Grammar, Mechanics, etc.
+  difficulty_level INTEGER DEFAULT 1, -- 1-5 scale
+  year INTEGER, -- exam year
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Quiz sessions
+CREATE TABLE quiz_sessions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id),
+  subject TEXT NOT NULL,
+  total_questions INTEGER NOT NULL,
+  correct_answers INTEGER NOT NULL,
+  wrong_answers INTEGER NOT NULL,
+  score_percentage DECIMAL(5,2),
+  time_spent INTEGER, -- in seconds
+  questions_answered JSONB, -- array of question IDs and user answers
+  completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User progress tracking (Khan Academy style)
+CREATE TABLE user_progress (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id),
+  subject TEXT NOT NULL,
+  topic TEXT,
+  questions_attempted INTEGER DEFAULT 0,
+  questions_correct INTEGER DEFAULT 0,
+  mastery_level DECIMAL(3,2) DEFAULT 0, -- 0.00 to 1.00 (mastery achieved at 0.80)
+  last_practiced TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  energy_points INTEGER DEFAULT 0, -- gamification
+  UNIQUE(user_id, subject, topic)
+);
+
+-- SMS notifications log
+CREATE TABLE sms_notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id),
+  phone_number TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'pending', -- pending, sent, failed
+  sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Row Level Security
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sms_notifications ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can view own quiz sessions" ON quiz_sessions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create own quiz sessions" ON quiz_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view own progress" ON user_progress FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own progress" ON user_progress FOR ALL USING (auth.uid() = user_id);
+```
+
+---
+
+## 🎨 **FRONTEND STRUCTURE**
+
+### **Component Architecture:**
+```
+src/
+├── components/
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   ├── SignupForm.tsx
+│   │   └── ProfileSetup.tsx
+│   ├── quiz/
+│   │   ├── QuizInterface.tsx
+│   │   ├── QuestionCard.tsx
+│   │   ├── ResultsScreen.tsx
+│   │   └── ProgressBar.tsx
+│   ├── dashboard/
+│   │   ├── Dashboard.tsx
+│   │   ├── ProgressChart.tsx
+│   │   ├── SubjectCards.tsx
+│   │   └── PerformanceStats.tsx
+│   ├── common/
+│   │   ├── Header.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── LoadingSpinner.tsx
+│   │   └── Button.tsx
+│   └── offline/
+│       ├── OfflineIndicator.tsx
+│       └── CachedQuestions.tsx
+├── pages/
+│   ├── Landing.tsx
+│   ├── Auth.tsx
+│   ├── Dashboard.tsx
+│   ├── Quiz.tsx
+│   ├── Results.tsx
+│   └── Profile.tsx
+├── hooks/
+│   ├── useAuth.tsx
+│   ├── useQuiz.tsx
+│   ├── useProgress.tsx
+│   └── useOffline.tsx
+├── services/
+│   ├── supabase.ts
+│   ├── questionService.ts
+│   ├── smsService.ts
+│   └── openaiService.ts
+├── utils/
+│   ├── constants.ts
+│   ├── helpers.ts
+│   └── validators.ts
+└── types/
+    └── index.ts
+```
+
+---
+
+## 🚀 **KEY FEATURES IMPLEMENTATION**
+
+### **1. Authentication Flow:**
+- Sign up with email/phone number
+- Email verification via Supabase
+- Profile setup (name, subjects, target exam)
+- Persistent login state
+- Password reset functionality
+
+### **2. Quiz Engine Logic:**
+```typescript
+// Quiz mechanics
+const QUIZ_CONFIG = {
+  questionsPerSession: 20,
+  timeLimit: 30, // minutes
+  passingScore: 60, // percentage
+  masteryThreshold: 80 // percentage for mastery
+};
+
+// Question selection algorithm
+const selectQuestions = (subject: string, difficulty: number) => {
+  // Random selection with difficulty weighting
+  // Avoid recently answered questions
+  // Prioritize weak topics
+};
+```
+
+### **3. Progress Tracking (Khan Academy Style):**
+- Visual progress bars for each subject/topic
+- Mastery system (80% accuracy = mastery achieved)
+- Energy points system (10 points per correct answer)
+- Streak tracking (consecutive days practiced)
+- Subject strength radar chart
+
+### **4. SMS Integration:**
+```typescript
+// Daily study reminders
+const sendStudyReminder = async (phone: string, name: string) => {
+  const message = `Hi ${name}! 📚 Ready for your daily JAMB practice? Complete 10 questions today and earn energy points! - PrepNaija`;
+  // Send via Termii API
+};
+```
+
+### **5. AI Explanations:**
+- When user gets question wrong, show AI-generated explanation
+- Use OpenAI API to explain why answer is correct
+- Include study tips and related concepts
+- Store explanations to reduce API calls
+
+### **6. Offline Mode:**
+- Cache 50 questions per subject locally
+- Show offline indicator when network is poor
+- Sync progress when connection restored
+- Download questions for selected subjects
+
+---
+
+## 📱 **UI/UX REQUIREMENTS**
+
+### **Design System:**
+- **Colors:** Green primary (#10B981), Blue secondary (#3B82F6), Red for errors (#EF4444)
+- **Typography:** Inter font family, clear hierarchy
+- **Mobile-first:** All components must work perfectly on phones
+- **Dark mode:** Toggle between light/dark themes
+- **Nigerian context:** Use familiar language and examples
+
+### **Key Screens:**
+1. **Landing Page:** Hero section, features, testimonials, pricing
+2. **Auth Pages:** Simple forms with social proof
+3. **Dashboard:** Progress overview, subject cards, recent activity
+4. **Quiz Interface:** Clean question display, timer, progress bar
+5. **Results Screen:** Score, explanations, next steps
+
+### **Responsive Breakpoints:**
+```css
+/* Mobile first approach */
+sm: '640px'   // Small phones
+md: '768px'   // Tablets  
+lg: '1024px'  // Desktop
+xl: '1280px'  // Large desktop
+```
+
+---
+
+## 🔗 **API ENDPOINTS STRUCTURE**
+
+### **Authentication:**
+- `POST /auth/signup` - User registration
+- `POST /auth/login` - User login
+- `GET /auth/user` - Get current user
+- `PUT /auth/profile` - Update profile
+
+### **Questions & Quiz:**
+- `GET /questions/random/:subject/:count` - Get random questions
+- `POST /quiz/start` - Start new quiz session
+- `POST /quiz/submit` - Submit quiz answers
+- `GET /quiz/history` - Get user's quiz history
+
+### **Progress & Analytics:**
+- `GET /progress/:userId` - Get user progress
+- `POST /progress/update` - Update progress after quiz
+- `GET /analytics/performance` - Get performance insights
+
+### **SMS & Notifications:**
+- `POST /sms/reminder` - Send study reminder
+- `POST /sms/results` - Send quiz results
+- `GET /notifications` - Get user notifications
+
+---
+
+## 🎮 **GAMIFICATION FEATURES**
+
+### **Point System:**
+- 10 points per correct answer
+- 50 bonus points for completing quiz
+- 100 bonus points for achieving topic mastery
+- 200 bonus points for daily streak
+
+### **Achievements/Badges:**
+- "First Quiz" - Complete your first quiz
+- "Mathematics Master" - Achieve 80%+ in Mathematics
+- "Streak Warrior" - Practice for 7 consecutive days
+- "Question Crusher" - Answer 1000 questions correctly
+
+### **Leaderboard:**
+- Weekly rankings among friends/classmates
+- Subject-specific leaderboards
+- School-wide competitions
+
+---
+
+## 📈 **SAMPLE DATA TO INCLUDE**
+
+### **Generate 100 Sample Questions:**
+- **Mathematics:** Algebra, Geometry, Statistics (JAMB 2015-2024 style)
+- **English:** Grammar, Comprehension, Vocabulary (WAEC format)
+- Include realistic Nigerian examples and contexts
+- Vary difficulty levels (1-5)
+- Add detailed explanations for each answer
+
+### **Sample Users for Testing:**
+- Student profiles with different progress levels
+- Various subject combinations and preferences
+- Different performance patterns (strong/weak areas)
+
+---
+
+## 🔧 **ENVIRONMENT SETUP**
+
+### **Required Environment Variables:**
+```env
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+REACT_APP_OPENAI_API_KEY=your_openai_key
+REACT_APP_TERMII_API_KEY=your_termii_key
+REACT_APP_APP_ENV=development
+```
+
+### **Package.json Dependencies:**
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
+    "typescript": "^4.9.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "axios": "^1.6.0",
+    "tailwindcss": "^3.3.0",
+    "lucide-react": "^0.263.1",
+    "recharts": "^2.8.0",
+    "react-hook-form": "^7.47.0",
+    "react-hot-toast": "^2.4.1"
+  }
+}
+```
+
+---
+
+## 🚀 **DEPLOYMENT INSTRUCTIONS**
+
+### **Frontend (Vercel):**
+1. Connect GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy with automatic builds on git push
+
+### **Backend (Supabase):**
+1. Create new Supabase project
+2. Run database migrations
+3. Set up Row Level Security policies
+4. Configure authentication providers
+
+### **Domain Setup:**
+- Custom domain: prepnaija.com
+- SSL certificate (automatic via Vercel)
+- CDN optimization for Nigerian users
+
+---
+
+## ✅ **SUCCESS CRITERIA**
+
+The MVP is complete when:
+1. ✅ User can register, login, and set up profile
+2. ✅ User can select subjects and start quiz
+3. ✅ Quiz engine serves random questions with timer
+4. ✅ Results screen shows score and explanations
+5. ✅ Dashboard displays progress and statistics
+6. ✅ SMS reminders work for Nigerian phone numbers
+7. ✅ Offline mode caches questions locally
+8. ✅ Responsive design works on all devices
+9. ✅ Database is properly secured with RLS
+10. ✅ App is deployed and accessible online
+
+---
+
+## 🎯 **POST-MVP FEATURES (Future Iterations)**
+- Video explanations for complex topics
+- Live group study sessions
+- School partnership dashboard
+- Advanced analytics and insights
+- Social features (study groups, challenges)
+- Payment integration (Paystack/Flutterwave)
+
+---
+
+**Build this as a production-ready MVP that can handle 1000+ concurrent users and serve as the foundation for scaling to 10,000+ students. Focus on performance, security, and user experience. Make it feel like a polished, professional educational platform that Nigerian students will love to use.**

@@ -1,0 +1,337 @@
+import { useState, useEffect, useCallback } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { QuizState, QuizAnswer, Question, ExplanationResponse } from "@/types";
+import { QUIZ_CONFIG, POINTS_SYSTEM } from "@/utils/constants";
+import { questionService } from "@/services/questionService";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+
+const initialQuizState: QuizState = {
+  questions: [],
+  currentQuestionIndex: 0,
+  selectedAnswers: {},
+  timeRemaining: QUIZ_CONFIG.timeLimit * 60, // Convert to seconds
+  isSubmitted: false,
+  startTime: new Date(),
+};
+
+export function useQuiz(subject: string, examType: string = 'JAMB') {
+  const [quizState, setQuizState] = useState<QuizState>(initialQuizState);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [explanations, setExplanations] = useState<Record<string, ExplanationResponse>>({});
+  
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Timer effect
+  useEffect(() => {
+    if (quizState.isSubmitted || quizState.timeRemaining <= 0 || quizState.questions.length === 0) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setQuizState(prev => {
+        const newTimeRemaining = prev.timeRemaining - 1;
+        
+        // Auto-submit when time runs out
+        if (newTimeRemaining <= 0) {
+          handleSubmitQuiz();
+        }
+        
+        return { ...prev, timeRemaining: newTimeRemaining };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [quizState.isSubmitted, quizState.timeRemaining, quizState.questions.length]);
+
+  const submitQuizMutation = useMutation({
+    mutationFn: async (quizData: any) => {
+      const storedUser = localStorage.getItem('user');
+      const token = storedUser ? JSON.parse(storedUser)?.access_token : null;
+      
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch("/api/quiz/submit", {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify(quizData),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`${response.status}: ${text}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quiz/history"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/progress"] });
+      
+      toast({
+        title: "Quiz Submitted!",
+        description: "Your answers have been saved and your progress updated.",
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "Your session has expired. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 500);
+        return;
+      }
+      
+      console.error("Submit quiz error:", error);
+      toast({
+        title: "Submission Failed",
+        description: "Failed to submit quiz. Your answers are saved locally.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const loadQuiz = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const questions = await questionService.getQuestions(subject, QUIZ_CONFIG.questionsPerSession, examType);
+      
+      if (questions.length === 0) {
+        throw new Error(`No questions available for ${subject}. Please try again or check your internet connection.`);
+      }
+
+      setQuizState({
+        ...initialQuizState,
+        questions,
+        timeRemaining: QUIZ_CONFIG.timeLimit * 60,
+        startTime: new Date(),
+      });
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load quiz questions";
+      setError(errorMessage);
+      toast({
+        title: "Error Loading Quiz",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [subject, examType, toast]);
+
+  const selectAnswer = (questionId: string, answer: string) => {
+    if (quizState.isSubmitted) return;
+
+    setQuizState(prev => ({
+      ...prev,
+      selectedAnswers: {
+        ...prev.selectedAnswers,
+        [questionId]: answer,
+      },
+    }));
+  };
+
+  const navigateToQuestion = (index: number) => {
+    if (index >= 0 && index < quizState.questions.length && !quizState.isSubmitted) {
+      setQuizState(prev => ({
+        ...prev,
+        currentQuestionIndex: index,
+      }));
+    }
+  };
+
+  const nextQuestion = () => {
+    if (quizState.currentQuestionIndex < quizState.questions.length - 1) {
+      navigateToQuestion(quizState.currentQuestionIndex + 1);
+    }
+  };
+
+  const previousQuestion = () => {
+    if (quizState.currentQuestionIndex > 0) {
+      navigateToQuestion(quizState.currentQuestionIndex - 1);
+    }
+  };
+
+  const handleSubmitQuiz = useCallback(() => {
+    if (quizState.isSubmitted) return;
+
+    const endTime = new Date();
+    const timeSpent = Math.floor((endTime.getTime() - quizState.startTime.getTime()) / 1000);
+
+    // Calculate results
+    const answers: QuizAnswer[] = quizState.questions.map(question => {
+      const selectedAnswer = quizState.selectedAnswers[question.id.toString()] || "";
+      const isCorrect = selectedAnswer === question.correctAnswer;
+      
+      return {
+        questionId: question.id.toString(),
+        selectedAnswer,
+        isCorrect,
+        timeSpent: 30, // Default time per question
+      };
+    });
+
+    const correctAnswers = answers.filter(a => a.isCorrect).length;
+    const wrongAnswers = quizState.questions.length - correctAnswers;
+    const scorePercentage = (correctAnswers / quizState.questions.length) * 100;
+
+    const questionsAnswered = quizState.questions.map(q => ({
+      questionId: q.id,
+      userAnswer: quizState.selectedAnswers[q.id] || "",
+      correctAnswer: q.correctAnswer,
+      isCorrect: (quizState.selectedAnswers[q.id.toString()] || "") === q.correctAnswer,
+    }));
+
+    const quizData = {
+      subject,
+      totalQuestions: quizState.questions.length,
+      correctAnswers,
+      wrongAnswers,
+      scorePercentage: scorePercentage.toFixed(2),
+      timeSpent,
+      questionsAnswered,
+    };
+
+    setQuizState(prev => ({ ...prev, isSubmitted: true }));
+    submitQuizMutation.mutate(quizData);
+  }, [quizState, subject, submitQuizMutation]);
+
+  const getExplanation = async (questionId: string, userAnswer: string) => {
+    if (explanations[questionId]) return explanations[questionId];
+
+    const question = quizState.questions.find(q => q.id.toString() === questionId);
+    if (!question) return null;
+
+    try {
+      const storedUser = localStorage.getItem('user');
+      const token = storedUser ? JSON.parse(storedUser)?.access_token : null;
+      
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch("/api/explain", {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({
+          questionText: question.questionText,
+          options: {
+            A: question.options.A,
+            B: question.options.B,
+            C: question.options.C,
+            D: question.options.D,
+          },
+          correctAnswer: question.correctAnswer,
+          subject: question.subject,
+          userAnswer,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get explanation");
+      }
+
+      const explanation = await response.json();
+      
+      setExplanations(prev => ({
+        ...prev,
+        [questionId]: explanation,
+      }));
+
+      return explanation;
+    } catch (error) {
+      console.error("Failed to get explanation:", error);
+      toast({
+        title: "Explanation Unavailable",
+        description: "Failed to load explanation. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const getCurrentQuestion = (): Question | null => {
+    if (quizState.questions.length === 0) return null;
+    return quizState.questions[quizState.currentQuestionIndex] || null;
+  };
+
+  const getProgress = () => {
+    const answeredCount = Object.keys(quizState.selectedAnswers).length;
+    const totalCount = quizState.questions.length;
+    return { answered: answeredCount, total: totalCount };
+  };
+
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getQuizResults = () => {
+    if (!quizState.isSubmitted) return null;
+
+    const answers: QuizAnswer[] = quizState.questions.map(question => {
+      const selectedAnswer = quizState.selectedAnswers[question.id.toString()] || "";
+      const isCorrect = selectedAnswer === question.correctAnswer;
+      
+      return {
+        questionId: question.id.toString(),
+        selectedAnswer,
+        isCorrect,
+        timeSpent: 30,
+      };
+    });
+
+    const correctCount = answers.filter(a => a.isCorrect).length;
+    const scorePercentage = (correctCount / quizState.questions.length) * 100;
+
+    return {
+      answers,
+      correctCount,
+      wrongCount: quizState.questions.length - correctCount,
+      scorePercentage,
+      totalQuestions: quizState.questions.length,
+      passed: scorePercentage >= QUIZ_CONFIG.passingScore,
+    };
+  };
+
+  return {
+    quizState,
+    isLoading,
+    error,
+    explanations,
+    loadQuiz,
+    selectAnswer,
+    navigateToQuestion,
+    nextQuestion,
+    previousQuestion,
+    submitQuiz: handleSubmitQuiz,
+    getExplanation,
+    getCurrentQuestion,
+    getProgress,
+    formatTime,
+    getQuizResults,
+    isSubmitting: submitQuizMutation.isPending,
+  };
+}

@@ -1,0 +1,979 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepNaija - Nigerian Exam Preparation Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                }
+            },
+            fontFamily: {
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+            }
+        },
+    };
+    </script>
+    <style>
+        :root {
+            --background: hsl(0 0% 100%);
+            --foreground: hsl(222 47% 11%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222 47% 11%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(222 47% 11%);
+            --primary: hsl(158 64% 52%);
+            --primary-foreground: hsl(0 0% 100%);
+            --secondary: hsl(210 40% 98%);
+            --secondary-foreground: hsl(222 47% 11%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215 16% 47%);
+            --accent: hsl(151 81% 46%);
+            --accent-foreground: hsl(0 0% 100%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(0 0% 100%);
+            --border: hsl(214 32% 91%);
+            --input: hsl(214 32% 91%);
+            --ring: hsl(158 64% 52%);
+            --radius: 0.5rem;
+        }
+        
+        .dark {
+            --background: hsl(224 71% 4%);
+            --foreground: hsl(213 31% 91%);
+            --card: hsl(224 71% 4%);
+            --card-foreground: hsl(213 31% 91%);
+            --popover: hsl(224 71% 4%);
+            --popover-foreground: hsl(213 31% 91%);
+            --primary: hsl(158 64% 52%);
+            --primary-foreground: hsl(222 47% 11%);
+            --secondary: hsl(215 28% 17%);
+            --secondary-foreground: hsl(213 31% 91%);
+            --muted: hsl(215 28% 17%);
+            --muted-foreground: hsl(217 11% 65%);
+            --accent: hsl(151 81% 46%);
+            --accent-foreground: hsl(222 47% 11%);
+            --destructive: hsl(0 63% 31%);
+            --destructive-foreground: hsl(213 31% 91%);
+            --border: hsl(215 28% 17%);
+            --input: hsl(215 28% 17%);
+            --ring: hsl(158 64% 52%);
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease-in-out;
+        }
+        
+        .hover-lift {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-background text-foreground font-sans">
+    <!-- Navigation -->
+    <nav class="bg-background border-b border-border sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-primary-foreground text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-foreground">PrepNaija</span>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                    <a href="#how-it-works" class="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
+                    <a href="#pricing" class="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                    <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-muted-foreground hover:text-foreground transition-colors">Login</button>
+                    <button class="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-accent transition-colors">
+                        Sign Up Free
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button class="text-muted-foreground">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-br from-background to-muted py-20 lg:py-32">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="text-center lg:text-left">
+                    <h1 class="text-4xl lg:text-6xl font-bold text-foreground mb-6">
+                        Ace Your <span class="text-primary">JAMB, WAEC</span> & <span class="text-accent">NECO</span> Exams
+                    </h1>
+                    <p class="text-xl text-muted-foreground mb-8 leading-relaxed">
+                        Join over 50,000 Nigerian students using AI-powered practice questions, 
+                        personalized study plans, and offline mode to achieve their dream scores.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+                        <button class="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-accent transition-colors hover-lift">
+                            Start Free Practice
+                        </button>
+                        <button class="border border-border text-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-muted transition-colors">
+                            Watch Demo
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-center lg:justify-start space-x-6 text-sm text-muted-foreground">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check-circle text-primary"></i>
+                            <span>Free Forever</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-wifi text-primary"></i>
+                            <span>Works Offline</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-mobile-alt text-primary"></i>
+                            <span>Mobile Optimized</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <!-- Dashboard Preview Mockup -->
+                    <div class="bg-card rounded-2xl shadow-2xl border border-border p-6 hover-lift">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-card-foreground">Your Progress</h3>
+                            <div class="flex items-center space-x-2 text-sm text-muted-foreground">
+                                <i class="fas fa-calendar"></i>
+                                <span>Today</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Subject Cards -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-muted rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">Mathematics</span>
+                                    <i class="fas fa-calculator text-primary"></i>
+                                </div>
+                                <div class="text-2xl font-bold text-card-foreground mb-1">85%</div>
+                                <div class="w-full bg-secondary rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full progress-bar" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div class="bg-muted rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">English</span>
+                                    <i class="fas fa-book text-accent"></i>
+                                </div>
+                                <div class="text-2xl font-bold text-card-foreground mb-1">92%</div>
+                                <div class="w-full bg-secondary rounded-full h-2">
+                                    <div class="bg-accent h-2 rounded-full progress-bar" style="width: 92%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Activity -->
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                                <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                                    <i class="fas fa-trophy text-primary-foreground text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-card-foreground">Mastered Algebra!</p>
+                                    <p class="text-xs text-muted-foreground">+100 energy points</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                                <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                                    <i class="fas fa-fire text-accent-foreground text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-card-foreground">7-day streak!</p>
+                                    <p class="text-xs text-muted-foreground">Keep it up, Adebayo</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-background">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+                    Everything You Need to Succeed
+                </h2>
+                <p class="text-xl text-muted-foreground max-w-3xl mx-auto">
+                    From AI-powered explanations to offline practice, PrepNaija gives you all the tools 
+                    to ace your Nigerian exams with confidence.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-brain text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-card-foreground mb-4">AI-Powered Explanations</h3>
+                    <p class="text-muted-foreground mb-4">
+                        Get instant, detailed explanations for every wrong answer. Our AI breaks down complex concepts 
+                        into simple, easy-to-understand steps.
+                    </p>
+                    <div class="text-sm text-primary font-medium">
+                        <i class="fas fa-arrow-right mr-2"></i>Learn from mistakes
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-wifi-slash text-accent text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-card-foreground mb-4">Offline Mode</h3>
+                    <p class="text-muted-foreground mb-4">
+                        Practice anywhere, anytime. Download questions to your device and study even 
+                        without internet connection. Perfect for areas with poor network.
+                    </p>
+                    <div class="text-sm text-accent font-medium">
+                        <i class="fas fa-arrow-right mr-2"></i>Study anywhere
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-chart-line text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-card-foreground mb-4">Progress Tracking</h3>
+                    <p class="text-muted-foreground mb-4">
+                        Khan Academy-style progress tracking shows your mastery level in each subject. 
+                        Visualize your growth and identify areas that need more practice.
+                    </p>
+                    <div class="text-sm text-primary font-medium">
+                        <i class="fas fa-arrow-right mr-2"></i>Track mastery
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-sms text-accent text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-card-foreground mb-4">SMS Reminders</h3>
+                    <p class="text-muted-foreground mb-4">
+                        Never miss a practice session. Get daily study reminders and quiz results 
+                        sent directly to your phone via SMS.
+                    </p>
+                    <div class="text-sm text-accent font-medium">
+                        <i class="fas fa-arrow-right mr-2"></i>Stay consistent
+                    </div>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-gamepad text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-card-foreground mb-4">Gamification</h3>
+                    <p class="text-muted-foreground mb-4">
+                        Earn energy points, unlock achievements, and compete with friends. 
+                        Make studying fun with our engaging reward system.
+                    </p>
+                    <div class="text-sm text-primary font-medium">
+                        <i class="fas fa-arrow-right mr-2"></i>Make it fun
+                    </div>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-clock text-accent text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-card-foreground mb-4">Timed Practice</h3>
+                    <p class="text-muted-foreground mb-4">
+                        Simulate real exam conditions with our 30-minute timed sessions. 
+                        Build confidence and improve your time management skills.
+                    </p>
+                    <div class="text-sm text-accent font-medium">
+                        <i class="fas fa-arrow-right mr-2"></i>Exam ready
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 bg-muted">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+                    Get Started in 3 Simple Steps
+                </h2>
+                <p class="text-xl text-muted-foreground">
+                    Join thousands of successful students who've improved their scores with PrepNaija
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-2xl font-bold text-primary-foreground">1</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-foreground mb-4">Sign Up & Choose Subjects</h3>
+                    <p class="text-muted-foreground">
+                        Create your free account and select the subjects you want to practice. 
+                        Choose from Mathematics, English, Physics, Chemistry, and Biology.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-2xl font-bold text-accent-foreground">2</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-foreground mb-4">Take Practice Quizzes</h3>
+                    <p class="text-muted-foreground">
+                        Start with 20-question quizzes tailored to your level. Get instant feedback 
+                        and AI explanations for every answer.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-2xl font-bold text-primary-foreground">3</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-foreground mb-4">Track Progress & Improve</h3>
+                    <p class="text-muted-foreground">
+                        Monitor your progress with visual charts, achieve mastery in topics, 
+                        and watch your scores improve over time.
+                    </p>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <button class="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-accent transition-colors hover-lift">
+                    Start Your Journey Today
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Exam Coverage Section -->
+    <section class="py-20 bg-background">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+                    Complete Exam Coverage
+                </h2>
+                <p class="text-xl text-muted-foreground">
+                    Authentic questions for all major Nigerian examinations
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- JAMB -->
+                <div class="bg-card rounded-xl border border-border p-8 text-center hover-lift">
+                    <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-university text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-card-foreground mb-4">JAMB UTME</h3>
+                    <p class="text-muted-foreground mb-6">
+                        Comprehensive practice for Joint Admissions and Matriculation Board exams. 
+                        Over 10,000 questions covering all subjects.
+                    </p>
+                    <div class="space-y-2 text-sm text-left">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-primary"></i>
+                            <span>Mathematics • English • Physics</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-primary"></i>
+                            <span>Chemistry • Biology • Literature</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-primary"></i>
+                            <span>Past questions from 2010-2024</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WAEC -->
+                <div class="bg-card rounded-xl border border-border p-8 text-center hover-lift">
+                    <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-certificate text-accent text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-card-foreground mb-4">WAEC SSCE</h3>
+                    <p class="text-muted-foreground mb-6">
+                        West African Senior School Certificate Examination preparation with 
+                        detailed solutions and marking schemes.
+                    </p>
+                    <div class="space-y-2 text-sm text-left">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-accent"></i>
+                            <span>Core subjects + Electives</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-accent"></i>
+                            <span>Theory & Objective questions</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-accent"></i>
+                            <span>Detailed marking guides</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NECO -->
+                <div class="bg-card rounded-xl border border-border p-8 text-center hover-lift">
+                    <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-graduation-cap text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-card-foreground mb-4">NECO SSCE</h3>
+                    <p class="text-muted-foreground mb-6">
+                        National Examinations Council preparation with current syllabus 
+                        alignment and comprehensive topic coverage.
+                    </p>
+                    <div class="space-y-2 text-sm text-left">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-primary"></i>
+                            <span>Updated syllabus alignment</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-primary"></i>
+                            <span>Multiple choice & Theory</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check text-primary"></i>
+                            <span>Recent exam patterns</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-20 bg-muted">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+                    Student Success Stories
+                </h2>
+                <p class="text-xl text-muted-foreground">
+                    Hear from students who achieved their dream scores with PrepNaija
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="flex items-center space-x-1 mb-4">
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                    </div>
+                    <p class="text-muted-foreground mb-6 italic">
+                        "PrepNaija helped me improve my JAMB score from 180 to 289! The AI explanations 
+                        made complex math topics so much easier to understand."
+                    </p>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <span class="text-primary-foreground font-semibold">A</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-card-foreground">Adebayo Okonkwo</p>
+                            <p class="text-sm text-muted-foreground">University of Lagos, Medicine</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="flex items-center space-x-1 mb-4">
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                    </div>
+                    <p class="text-muted-foreground mb-6 italic">
+                        "The offline mode was a lifesaver! I could practice even when there was no network 
+                        in my village. Got 6 A's in WAEC!"
+                    </p>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-accent rounded-full flex items-center justify-center">
+                            <span class="text-accent-foreground font-semibold">C</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-card-foreground">Chioma Eze</p>
+                            <p class="text-sm text-muted-foreground">FUTO, Computer Science</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="flex items-center space-x-1 mb-4">
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <i class="fas fa-star text-yellow-400"></i>
+                    </div>
+                    <p class="text-muted-foreground mb-6 italic">
+                        "The progress tracking kept me motivated. Seeing my improvement in real-time 
+                        pushed me to study harder. Scored 320 in JAMB!"
+                    </p>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <span class="text-primary-foreground font-semibold">F</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-card-foreground">Fatima Ahmad</p>
+                            <p class="text-sm text-muted-foreground">ABU Zaria, Engineering</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <div class="inline-flex items-center space-x-4 bg-card rounded-lg border border-border px-6 py-4">
+                    <div class="text-3xl font-bold text-primary">50,000+</div>
+                    <div class="text-left">
+                        <p class="font-semibold text-card-foreground">Active Students</p>
+                        <p class="text-sm text-muted-foreground">Preparing for exams daily</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-background">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+                    Choose Your Plan
+                </h2>
+                <p class="text-xl text-muted-foreground">
+                    Start free and upgrade when you're ready for premium features
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Free Plan -->
+                <div class="bg-card rounded-xl border border-border p-8 hover-lift">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-card-foreground mb-2">Free Plan</h3>
+                        <div class="text-4xl font-bold text-primary mb-2">₦0</div>
+                        <p class="text-muted-foreground">Perfect to get started</p>
+                    </div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check text-primary"></i>
+                            <span class="text-card-foreground">50 practice questions per day</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check text-primary"></i>
+                            <span class="text-card-foreground">Basic progress tracking</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check text-primary"></i>
+                            <span class="text-card-foreground">Access to all subjects</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check text-primary"></i>
+                            <span class="text-card-foreground">Mobile app access</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check text-primary"></i>
+                            <span class="text-card-foreground">Community support</span>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full bg-secondary text-secondary-foreground py-3 rounded-lg font-semibold hover:bg-muted transition-colors">
+                        Get Started Free
+                    </button>
+                </div>
+
+                <!-- Premium Plan -->
+                <div class="bg-primary rounded-xl p-8 text-primary-foreground relative hover-lift">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span class="bg-accent text-accent-foreground px-4 py-1 rounded-full text-sm font-semibold">
+                            Most Popular
+                        </span>
+                    </div>
+                    
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold mb-2">Premium Plan</h3>
+                        <div class="text-4xl font-bold mb-2">₦2,500</div>
+                        <p class="opacity-90">per month</p>
+                    </div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check"></i>
+                            <span>Unlimited practice questions</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check"></i>
+                            <span>AI-powered explanations</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check"></i>
+                            <span>Offline mode (download questions)</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check"></i>
+                            <span>SMS study reminders</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check"></i>
+                            <span>Advanced analytics</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check"></i>
+                            <span>Personalized study plans</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check"></i>
+                            <span>Priority support</span>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full bg-white text-primary py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                        Upgrade to Premium
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <p class="text-muted-foreground mb-4">
+                    💳 Pay with Bank Transfer, USSD, or Mobile Money
+                </p>
+                <p class="text-sm text-muted-foreground">
+                    7-day money-back guarantee • Cancel anytime • No hidden fees
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-20 bg-muted">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+                    Frequently Asked Questions
+                </h2>
+                <p class="text-xl text-muted-foreground">
+                    Everything you need to know about PrepNaija
+                </p>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- FAQ Item 1 -->
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="text-lg font-semibold text-card-foreground">
+                            How does the offline mode work?
+                        </h3>
+                        <i class="fas fa-chevron-down text-muted-foreground"></i>
+                    </div>
+                    <p class="text-muted-foreground mt-4">
+                        You can download up to 50 questions per subject directly to your device. 
+                        Once downloaded, you can practice without any internet connection. Your progress 
+                        will sync automatically when you reconnect to the internet.
+                    </p>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="text-lg font-semibold text-card-foreground">
+                            Are the questions authentic and up-to-date?
+                        </h3>
+                        <i class="fas fa-chevron-down text-muted-foreground"></i>
+                    </div>
+                    <p class="text-muted-foreground mt-4">
+                        Yes! Our question bank includes past questions from JAMB, WAEC, and NECO from 2010-2024, 
+                        plus AI-generated questions that follow the exact patterns and style of these examinations. 
+                        All questions are reviewed by subject matter experts.
+                    </p>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="text-lg font-semibold text-card-foreground">
+                            Can I use PrepNaija on my phone?
+                        </h3>
+                        <i class="fas fa-chevron-down text-muted-foreground"></i>
+                    </div>
+                    <p class="text-muted-foreground mt-4">
+                        Absolutely! PrepNaija is designed mobile-first and works perfectly on all smartphones, 
+                        tablets, and computers. You can study anywhere, anytime with our responsive design.
+                    </p>
+                </div>
+
+                <!-- FAQ Item 4 -->
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="text-lg font-semibold text-card-foreground">
+                            How do SMS reminders work?
+                        </h3>
+                        <i class="fas fa-chevron-down text-muted-foreground"></i>
+                    </div>
+                    <p class="text-muted-foreground mt-4">
+                        Premium users receive daily study reminders and quiz results via SMS to their registered 
+                        phone number. You can customize when and how often you want to receive these messages.
+                    </p>
+                </div>
+
+                <!-- FAQ Item 5 -->
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="text-lg font-semibold text-card-foreground">
+                            What payment methods do you accept?
+                        </h3>
+                        <i class="fas fa-chevron-down text-muted-foreground"></i>
+                    </div>
+                    <p class="text-muted-foreground mt-4">
+                        We accept bank transfers, USSD payments, mobile money (MTN, Airtel, etc.), 
+                        and debit/credit cards. All payments are secure and processed in Nigerian Naira.
+                    </p>
+                </div>
+
+                <!-- FAQ Item 6 -->
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="text-lg font-semibold text-card-foreground">
+                            Can I cancel my subscription anytime?
+                        </h3>
+                        <i class="fas fa-chevron-down text-muted-foreground"></i>
+                    </div>
+                    <p class="text-muted-foreground mt-4">
+                        Yes, you can cancel your Premium subscription at any time. You'll continue to have 
+                        access to premium features until the end of your current billing period, then 
+                        automatically switch to the free plan.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-r from-primary to-accent">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl lg:text-4xl font-bold text-white mb-6">
+                Ready to Ace Your Exams?
+            </h2>
+            <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                Join over 50,000 students who are already improving their scores with PrepNaija. 
+                Start your journey to academic success today.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors hover-lift">
+                    Start Free Practice
+                </button>
+                <button class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors">
+                    Watch Demo Video
+                </button>
+            </div>
+            <div class="mt-8 text-sm text-white/80">
+                No credit card required • Free forever plan available
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-card border-t border-border py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Company Info -->
+                <div class="md:col-span-2">
+                    <div class="flex items-center space-x-2 mb-6">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-primary-foreground text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-card-foreground">PrepNaija</span>
+                    </div>
+                    <p class="text-muted-foreground mb-6 max-w-md">
+                        Nigeria's leading exam preparation platform. Helping students ace JAMB, WAEC, 
+                        and NECO exams with AI-powered practice questions and personalized learning.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-muted rounded-lg flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-muted rounded-lg flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-muted rounded-lg flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-muted rounded-lg flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="font-semibold text-card-foreground mb-4">Quick Links</h4>
+                    <div class="space-y-3">
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">About Us</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Features</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Pricing</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Contact</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Help Center</a>
+                    </div>
+                </div>
+
+                <!-- Support -->
+                <div>
+                    <h4 class="font-semibold text-card-foreground mb-4">Support</h4>
+                    <div class="space-y-3">
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">FAQ</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Contact Support</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Terms of Service</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Refund Policy</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-border pt-8 mt-12">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-muted-foreground text-sm">
+                        © 2024 PrepNaija. All rights reserved.
+                    </p>
+                    <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                        <span class="text-muted-foreground text-sm">Made with ❤️ in Nigeria</span>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-phone text-primary"></i>
+                            <span class="text-muted-foreground text-sm">+234 800 PREP (7737)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // TODO: Implement business logic, API calls, or state management
+        (function() {
+            // Simple FAQ toggle functionality
+            const faqItems = document.querySelectorAll('.bg-card .cursor-pointer');
+            faqItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const icon = this.querySelector('i');
+                    const content = this.nextElementSibling;
+                    
+                    if (content.style.display === 'none' || !content.style.display) {
+                        content.style.display = 'block';
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    } else {
+                        content.style.display = 'none';
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                });
+            });
+
+            // Smooth scrolling for navigation links
+            const navLinks = document.querySelectorAll('a[href^="#"]');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Progress bar animation on scroll
+            const progressBars = document.querySelectorAll('.progress-bar');
+            const animateProgressBars = () => {
+                progressBars.forEach(bar => {
+                    const rect = bar.getBoundingClientRect();
+                    if (rect.top < window.innerHeight && rect.bottom >= 0) {
+                        const width = bar.style.width;
+                        bar.style.width = '0%';
+                        setTimeout(() => {
+                            bar.style.width = width;
+                        }, 100);
+                    }
+                });
+            };
+
+            window.addEventListener('scroll', animateProgressBars);
+            animateProgressBars(); // Initial call
+        })();
+    </script>
+</body>
+</html>

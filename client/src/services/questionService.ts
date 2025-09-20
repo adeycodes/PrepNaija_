@@ -1,0 +1,298 @@
+import { OfflineQuestion, Question } from "@/types";
+import { CACHE_CONFIG } from "@/utils/constants";
+import { apiFetch } from "@/lib/apiClient";
+
+async function getQuestions(subject: string, count: number, examType: string) {
+  const res = await apiFetch(`/api/questions?subject=${subject}&count=${count}&exam=${examType}`);
+  if (!res.ok) throw new Error("Failed to fetch questions");
+  return res.json();
+}
+
+
+class QuestionService {
+  private dbName = "PrepNaijaDB";
+  private version = 1;
+  private db: IDBDatabase | null = null;
+
+  async initDB(): Promise<void> {
+    if (this.db) return;
+
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, this.version);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve();
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        
+        if (!db.objectStoreNames.contains("questions")) {
+          const questionStore = db.createObjectStore("questions", { keyPath: "id" });
+          questionStore.createIndex("subject", "subject", { unique: false });
+          questionStore.createIndex("cached", "cached", { unique: false });
+        }
+      };
+    });
+  }
+
+  async cacheQuestions(subject: string, examType: string = 'JAMB'): Promise<void> {
+    try {
+      // Get auth token from localStorage
+      const storedUser = localStorage.getItem('user');
+      const token = storedUser ? JSON.parse(storedUser)?.access_token : null;
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Add Authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/questions/random/${subject}/${CACHE_CONFIG.questionsPerSubject}?examType=${examType}`, {
+        headers,
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch questions: ${response.statusText}`);
+      }
+
+      const questions: Question[] = await response.json();
+      await this.initDB();
+
+      if (!this.db) throw new Error("Failed to initialize database");
+
+      const transaction = this.db.transaction(["questions"], "readwrite");
+      const store = transaction.objectStore("questions");
+
+      const cachedQuestions: OfflineQuestion[] = questions.map(q => ({
+        ...q,
+        cached: true,
+        cacheDate: new Date(),
+        examType: examType // Ensure exam type is stored
+      }));
+
+      for (const question of cachedQuestions) {
+        await new Promise<void>((resolve, reject) => {
+          const request = store.put(question);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      console.log(`✅ Cached ${questions.length} ${subject} (${examType}) questions for offline use`);
+    } catch (error) {
+      console.error("❌ Failed to cache questions:", error);
+      throw error;
+    }
+  }
+
+  async getCachedQuestions(subject: string, count: number = 20, examType?: string): Promise<OfflineQuestion[]> {
+    await this.initDB();
+    
+    if (!this.db) throw new Error("Failed to initialize database");
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(["questions"], "readonly");
+      const store = transaction.objectStore("questions");
+      const index = store.index("subject");
+      const request = index.getAll(subject);
+
+      request.onsuccess = () => {
+        let questions = request.result as OfflineQuestion[];
+        
+        // Filter by exam type if specified
+        if (examType) {
+          questions = questions.filter(q => q.examType === examType);
+        }
+        
+        // Filter out expired cached questions
+        const validQuestions = questions.filter(q => {
+          const age = Date.now() - new Date(q.cacheDate).getTime();
+          return age < CACHE_CONFIG.maxCacheAge;
+        });
+
+        // Shuffle and return requested count
+        const shuffled = validQuestions.sort(() => Math.random() - 0.5);
+        console.log(`📱 Serving ${shuffled.slice(0, count).length} cached ${subject} questions (offline)`);
+        resolve(shuffled.slice(0, count));
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async clearExpiredCache(): Promise<void> {
+    await this.initDB();
+    
+    if (!this.db) return;
+
+    const transaction = this.db.transaction(["questions"], "readwrite");
+    const store = transaction.objectStore("questions");
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const questions = request.result as OfflineQuestion[];
+      const now = Date.now();
+
+      questions.forEach(q => {
+        const age = now - new Date(q.cacheDate).getTime();
+        if (age >= CACHE_CONFIG.maxCacheAge) {
+          store.delete(q.id);
+        }
+      });
+    };
+  }
+
+  async getCacheStats(): Promise<{ [subject: string]: number }> {
+    await this.initDB();
+    
+    if (!this.db) return {};
+
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(["questions"], "readonly");
+      const store = transaction.objectStore("questions");
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const questions = request.result as OfflineQuestion[];
+        const stats: { [subject: string]: number } = {};
+
+        questions.forEach(q => {
+          const age = Date.now() - new Date(q.cacheDate).getTime();
+          if (age < CACHE_CONFIG.maxCacheAge) {
+            stats[q.subject] = (stats[q.subject] || 0) + 1;
+          }
+        });
+
+        resolve(stats);
+      };
+
+      request.onerror = () => resolve({});
+    });
+  }
+
+  isOnline(): boolean {
+    return navigator.onLine;
+  }
+
+  async getQuestions(subject: string, count: number = 20, examType: string = 'JAMB'): Promise<Question[]> {
+    if (this.isOnline()) {
+      try {
+        console.log(`🌐 Fetching ${count} ${subject} (${examType}) questions online...`);
+        
+        // Get auth token from localStorage
+        const storedUser = localStorage.getItem('user');
+        const token = storedUser ? JSON.parse(storedUser)?.access_token : null;
+        
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        
+        // Add Authorization header if token exists
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(`/api/questions/random/${subject}/${count}?examType=${examType}`, {
+          headers,
+          credentials: "include"
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const questions = await response.json();
+        
+        // Cache questions for offline use
+        try {
+          await this.cacheQuestions(subject, examType);
+        } catch (cacheError) {
+          console.warn("Failed to cache questions:", cacheError);
+        }
+        
+        console.log(`✅ Served ${questions.length} ${subject} (${examType}) questions online`);
+        return questions;
+      } catch (error) {
+        // If online fetch fails, try cached questions
+        console.warn(`⚠️ Online fetch failed, using cached questions:`, error);
+        return await this.getCachedQuestions(subject, count, examType);
+      }
+    } else {
+      console.log(`�� Device offline, using cached questions`);
+      return await this.getCachedQuestions(subject, count, examType);
+    }
+  }
+
+  async getQuestionsFiltered(params: {
+    subject: string;
+    count?: number;
+    examType?: string;
+    difficulty?: string;
+    topics?: string[];
+    excludeIds?: string[];
+  }): Promise<Question[]> {
+    const {
+      subject,
+      count = 20,
+      examType = 'JAMB',
+      difficulty,
+      topics,
+      excludeIds,
+    } = params;
+
+    if (this.isOnline()) {
+      try {
+        // Get auth token from localStorage
+        const storedUser = localStorage.getItem('user');
+        const token = storedUser ? JSON.parse(storedUser)?.access_token : null;
+        
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const qs = new URLSearchParams({
+          subject,
+          count: String(count),
+          examType,
+        });
+        if (difficulty) qs.set('difficulty', difficulty);
+        if (topics && topics.length) qs.set('topics', topics.join(','));
+        if (excludeIds && excludeIds.length) qs.set('excludeIds', excludeIds.join(','));
+
+        const response = await fetch(`/api/quiz/generate?${qs.toString()}`, {
+          headers,
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const questions = await response.json();
+
+        // Opportunistically cache
+        try {
+          await this.cacheQuestions(subject, examType);
+        } catch {}
+
+        return questions;
+      } catch (error) {
+        console.warn('Filtered fetch failed, falling back to cache:', error);
+        return await this.getCachedQuestions(subject, count, examType);
+      }
+    }
+
+    return await this.getCachedQuestions(subject, count, examType);
+  }
+}
+
+export const questionService = new QuestionService();
