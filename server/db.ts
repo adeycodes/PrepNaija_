@@ -1,4 +1,6 @@
 // server/db.ts
+import "dotenv/config";
+
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 
@@ -12,12 +14,12 @@ export const connectDb = async () => {
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
+    family: 4, // ← Force IPv4 to avoid ENETUNREACH on Supabase IPv6
   });
 
   await client.connect();
   console.log("✅ Connected to Supabase DB");
 
-  // Return a Drizzle instance
   return drizzle(client);
 };
 

@@ -23,23 +23,43 @@ import {
 
 import { eq, and, desc, sql } from "drizzle-orm";
 
+/* ===================== INTERFACE ===================== */
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(userId: string, user: UpsertUser): Promise<User>;
+
   getProfile(userId: string): Promise<Profile | undefined>;
-  createProfile(profile: InsertProfile): Promise<Profile>;
-  updateProfile(userId: string, updates: Partial<InsertProfile>): Promise<Profile>;
-  getRandomQuestions(subject: string, count: number, examType?: string): Promise<Question[]>;
+  createProfile(profile: InsertProfile & { id: string }): Promise<Profile>;
+  updateProfile(
+    userId: string,
+    updates: Partial<InsertProfile>
+  ): Promise<Profile>;
+
+  getQuestionById(id: string): Promise<Question | null>;
+  getRandomQuestions(
+    subject: string,
+    count: number,
+    examType?: string
+  ): Promise<Question[]>;
   getAllQuestions(): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
+
   createQuizSession(session: InsertQuizSession): Promise<QuizSession>;
   getQuizHistory(userId: string): Promise<QuizSession[]>;
+
   getUserProgress(userId: string): Promise<UserProgress[]>;
   upsertUserProgress(progress: InsertUserProgress): Promise<UserProgress>;
-  createSmsNotification(notification: Omit<SmsNotification, "id" | "sentAt">): Promise<SmsNotification>;
+
+  createSmsNotification(
+    notification: Omit<SmsNotification, "id" | "sentAt">
+  ): Promise<SmsNotification>;
+
   getUserAchievements(userId: string): Promise<Achievement[]>;
-  createAchievement(achievement: Omit<Achievement, "id" | "earnedAt">): Promise<Achievement>;
-  // New filtered fetch
+  createAchievement(
+    achievement: Omit<Achievement, "id" | "earnedAt">
+  ): Promise<Achievement>;
+
   getFilteredRandomQuestions(params: {
     subject: string;
     count: number;
@@ -49,6 +69,8 @@ export interface IStorage {
     excludeIds?: string[];
   }): Promise<Question[]>;
 }
+
+/* ===================== IMPLEMENTATION ===================== */
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
@@ -68,47 +90,75 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+
     return user;
   }
 
+
   async getProfile(userId: string): Promise<Profile | undefined> {
-    const [profile] = await db.select().from(profiles).where(eq(profiles.id, userId));
+    const [profile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, userId));
+
     return profile;
   }
 
-  async createProfile(profileData: InsertProfile): Promise<Profile> {
+  async createProfile(
+    profileData: InsertProfile & { id: string }
+  ): Promise<Profile> {
     const [profile] = await db
       .insert(profiles)
-      .values(profileData)
+      .values({
+        id: profileData.id,
+        phone: profileData.phone,
+        fullName: profileData.fullName,
+        selectedSubjects: profileData.selectedSubjects,
+        targetExam: profileData.targetExam,
+      })
       .returning();
+
     return profile;
   }
 
-  async updateProfile(userId: string, updates: Partial<InsertProfile>): Promise<Profile> {
+  async updateProfile(
+    userId: string,
+    updates: Partial<InsertProfile>
+  ): Promise<Profile> {
     const [profile] = await db
       .update(profiles)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(profiles.id, userId))
       .returning();
+
     return profile;
   }
 
-  async getRandomQuestions(subject: string, count: number, examType?: string): Promise<Question[]> {
-    if (examType) {
-      return await db
-        .select()
-        .from(questions)
-        .where(and(eq(questions.subject, subject), eq(questions.examType, examType)))
-        .orderBy(sql`RANDOM()`)
-        .limit(count);
-    } else {
-      return await db
-        .select()
-        .from(questions)
-        .where(eq(questions.subject, subject))
-        .orderBy(sql`RANDOM()`)
-        .limit(count);
-    }
+  async getQuestionById(id: string): Promise<Question | null> {
+    const result = await db
+      .select()
+      .from(questions)
+      .where(eq(questions.id, id))
+      .limit(1);
+
+    return result[0] ?? null;
+  }
+
+  async getRandomQuestions(
+    subject: string,
+    count: number,
+    examType?: string
+  ): Promise<Question[]> {
+    return await db
+      .select()
+      .from(questions)
+      .where(
+        examType
+          ? and(eq(questions.subject, subject), eq(questions.examType, examType))
+          : eq(questions.subject, subject)
+      )
+      .orderBy(sql`RANDOM()`)
+      .limit(count);
   }
 
   async getAllQuestions(): Promise<Question[]> {
@@ -116,12 +166,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuestion(questionData: InsertQuestion): Promise<Question> {
-    const [question] = await db.insert(questions).values(questionData).returning();
+    const [question] = await db
+      .insert(questions)
+      .values(questionData)
+      .returning();
+
     return question;
   }
+   
 
-  async createQuizSession(sessionData: InsertQuizSession): Promise<QuizSession> {
-    const [session] = await db.insert(quizSessions).values(sessionData).returning();
+  async createQuizSession(
+    sessionData: InsertQuizSession
+  ): Promise<QuizSession> {
+    const [session] = await db
+      .insert(quizSessions)
+      .values(sessionData)
+      .returning();
+
     return session;
   }
 
@@ -134,10 +195,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserProgress(userId: string): Promise<UserProgress[]> {
-    return await db.select().from(userProgress).where(eq(userProgress.userId, userId));
+    return await db
+      .select()
+      .from(userProgress)
+      .where(eq(userProgress.userId, userId));
   }
 
-  async upsertUserProgress(progressData: InsertUserProgress): Promise<UserProgress> {
+  async upsertUserProgress(
+    progressData: InsertUserProgress
+  ): Promise<UserProgress> {
     const existing = await db
       .select()
       .from(userProgress)
@@ -145,7 +211,7 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(userProgress.userId, progressData.userId!),
           eq(userProgress.subject, progressData.subject),
-          eq(userProgress.topic, progressData.topic || "")
+          eq(userProgress.topic, progressData.topic ?? "")
         )
       );
 
@@ -155,15 +221,26 @@ export class DatabaseStorage implements IStorage {
         .set({ ...progressData, lastPracticed: new Date() })
         .where(eq(userProgress.id, existing[0].id))
         .returning();
+
       return updated;
-    } else {
-      const [created] = await db.insert(userProgress).values(progressData).returning();
-      return created;
     }
+
+    const [created] = await db
+      .insert(userProgress)
+      .values(progressData)
+      .returning();
+
+    return created;
   }
 
-  async createSmsNotification(notificationData: Omit<SmsNotification, "id" | "sentAt">): Promise<SmsNotification> {
-    const [notification] = await db.insert(smsNotifications).values(notificationData).returning();
+  async createSmsNotification(
+    notificationData: Omit<SmsNotification, "id" | "sentAt">
+  ): Promise<SmsNotification> {
+    const [notification] = await db
+      .insert(smsNotifications)
+      .values(notificationData)
+      .returning();
+
     return notification;
   }
 
@@ -175,8 +252,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(achievements.earnedAt));
   }
 
-  async createAchievement(achievementData: Omit<Achievement, "id" | "earnedAt">): Promise<Achievement> {
-    const [achievement] = await db.insert(achievements).values(achievementData).returning();
+  async createAchievement(
+    achievementData: Omit<Achievement, "id" | "earnedAt">
+  ): Promise<Achievement> {
+    const [achievement] = await db
+      .insert(achievements)
+      .values(achievementData)
+      .returning();
+
     return achievement;
   }
 
@@ -190,36 +273,33 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Question[]> {
     const { subject, count, examType, difficulty, topics, excludeIds } = params;
 
-    // Build dynamic conditions
-    const conditions: any[] = [eq(questions.subject, subject)];
+    const conditions = [eq(questions.subject, subject)];
     if (examType) conditions.push(eq(questions.examType, examType));
     if (difficulty) conditions.push(eq(questions.difficulty, difficulty));
 
-    // Drizzle doesn't support array-contains; topics are plain text, match equality if provided
-    // We accept first topic match OR any match; for simplicity use single topic or ignore
-    // If topics provided, we filter client-side after selection to keep server simple
-
-    let baseQuery = db
+    let rows = await db
       .select()
       .from(questions)
-      .where(conditions.length > 1 ? and(...conditions) : conditions[0])
+      .where(and(...conditions))
       .orderBy(sql`RANDOM()`)
       .limit(Math.max(count * 2, count));
 
-    let rows = await baseQuery;
-
-    if (excludeIds && excludeIds.length > 0) {
-      const set = new Set(excludeIds.map((id) => id.toString()));
-      rows = rows.filter((q) => !set.has(q.id.toString()));
+    if (excludeIds?.length) {
+      const exclude = new Set(excludeIds);
+      rows = rows.filter((q) => !exclude.has(q.id));
     }
 
-    if (topics && topics.length > 0) {
+    if (topics?.length) {
       const topicSet = new Set(topics.map((t) => t.toLowerCase()));
-      rows = rows.filter((q) => q.topic ? topicSet.has(q.topic.toLowerCase()) : false);
+      rows = rows.filter(
+        (q) => q.topic && topicSet.has(q.topic.toLowerCase())
+      );
     }
 
     return rows.slice(0, count);
   }
 }
+
+/* ===================== EXPORT ===================== */
 
 export const storage = new DatabaseStorage();

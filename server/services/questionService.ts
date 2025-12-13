@@ -7,6 +7,30 @@ export const SUBJECTS = ["Mathematics", "English", "Physics", "Chemistry", "Biol
 export const EXAM_TYPES = ["JAMB", "WAEC", "NECO"];
 
 export class QuestionService {
+  // ✅✅✅ NEW METHOD: Get single question by ID ✅✅✅
+  async getQuestionById(questionId: string): Promise<Question | null> {
+    try {
+      console.log(`[QuestionService] Fetching question by ID: ${questionId}`);
+      const question = await storage.getQuestionById(questionId);
+      
+      if (!question) {
+        console.log(`[QuestionService] Question ${questionId} not found in database`);
+        return null;
+      }
+      
+      console.log(`[QuestionService] Found question:`, {
+        id: question.id,
+        subject: question.subject,
+        topic: question.topic
+      });
+      
+      return question;
+    } catch (error) {
+      console.error(`[QuestionService] Error fetching question ${questionId}:`, error);
+      return null;
+    }
+  }
+
   async getQuestionsForQuiz(subject: string, count: number = 20, examType: string = 'JAMB'): Promise<Question[]> {
     try {
       // First, try to get questions from ALOC API (authentic past questions)

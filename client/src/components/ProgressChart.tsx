@@ -16,9 +16,15 @@ export default function ProgressChart({ data, quizHistory }: ProgressChartProps)
 
   // Calculate recent performance trend
   const recentQuizzes = quizHistory?.slice(0, 5) || [];
-  const recentAverageScore = recentQuizzes.length > 0 
-    ? Math.round(recentQuizzes.reduce((sum: number, quiz: any) => sum + parseFloat(quiz.scorePercentage || 0), 0) / recentQuizzes.length)
-    : 0;
+  const recentAverageScore = (() => {
+    if (recentQuizzes.length === 0) return 0;
+    const scores = recentQuizzes.map((q: any) => {
+      const v = Number(q?.scorePercentage ?? 0);
+      return Number.isFinite(v) ? v : 0;
+    });
+    const sum = scores.reduce((s: number, n: number) => s + n, 0);
+    return Math.round(sum / scores.length) || 0;
+  })();
 
   return (
     <div className="space-y-6">
@@ -140,7 +146,7 @@ export default function ProgressChart({ data, quizHistory }: ProgressChartProps)
                 <div key={quiz.id} className="flex items-center space-x-4 p-3 bg-muted rounded-lg">
                   <div className="flex-shrink-0">
                     <div className={`w-3 h-3 rounded-full ${
-                      parseFloat(quiz.scorePercentage) >= 70 ? 'bg-primary' : 'bg-destructive'
+                      Number(quiz.scorePercentage || 0) >= 70 ? 'bg-primary' : 'bg-destructive'
                     }`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -153,9 +159,9 @@ export default function ProgressChart({ data, quizHistory }: ProgressChartProps)
                   </div>
                   <div className="flex-shrink-0">
                     <span className={`text-sm font-semibold ${
-                      parseFloat(quiz.scorePercentage) >= 70 ? 'text-primary' : 'text-destructive'
+                      Number(quiz.scorePercentage || 0) >= 70 ? 'text-primary' : 'text-destructive'
                     }`}>
-                      {Math.round(parseFloat(quiz.scorePercentage))}%
+                      {Math.round(Number(quiz.scorePercentage || 0))}%
                     </span>
                   </div>
                 </div>

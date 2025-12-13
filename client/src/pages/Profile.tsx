@@ -134,12 +134,11 @@ export default function Profile() {
 
   const sendReminderMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/sms/reminder", {
+      const response = await apiFetch("/api/sms/reminder", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
       });
 
       if (!response.ok) {

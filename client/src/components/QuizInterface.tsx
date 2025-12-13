@@ -1,4 +1,3 @@
-      
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { QuizState } from "@/types";
 import { useQuiz } from "@/hooks/useQuiz";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, XCircle, Lightbulb } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, XCircle, Lightbulb, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Define the shape of a question with options
@@ -97,6 +96,7 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
   const [hasTriedLoad, setHasTriedLoad] = useState(false);
   const [explanationText, setExplanationText] = useState<string | null>(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [explanationError, setExplanationError] = useState<string | null>(null);
 
   const currentQuestion = getCurrentQuestion();
   const progress = getProgress();
@@ -120,7 +120,7 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
     }
   }, [loadQuiz]);
 
-  // Load quiz on mount - fixed dependency issue
+  // Load quiz on mount
   useEffect(() => {
     console.log('QuizInterface - useEffect triggered:', {
       questionsLength: quizState.questions.length,
@@ -137,64 +137,83 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
     }
   }, [quizState.questions.length, isLoading, hasTriedLoad, memoizedLoadQuiz, authLoading, isAuthenticated]);
 
-  // Do not auto-navigate on completion; we'll show a results modal instead.
+  // Clear explanation when question changes
+  useEffect(() => {
+    setExplanationText(null);
+    setExplanationError(null);
+  }, [currentQuestion?.id]);
 
+  // ✅ FIXED SUBMIT HANDLER - Using quizState.selectedAnswers instead of q.userAnswer
   const handleSubmitQuiz = useCallback(async () => {
     try {
       setShowConfirmSubmit(false);
       console.log('QuizInterface - Starting quiz submission...');
       
-      // Show loading state
       toast({
         title: "Submitting Quiz",
         description: "Please wait while we process your answers...",
         variant: "default",
       });
       
-      // Prepare quiz data for submission
+      // ✅ FIXED: Use quizState.selectedAnswers instead of q.userAnswer
+      const correctAnswers = quizState.questions.filter((q: QuestionWithOptions) => {
+        const userAnswer = quizState.selectedAnswers[q.id];
+        return userAnswer && userAnswer === q.correctAnswer;
+      }).length;
+      
+      const wrongAnswers = quizState.questions.filter((q: QuestionWithOptions) => {
+        const userAnswer = quizState.selectedAnswers[q.id];
+        return userAnswer && userAnswer !== q.correctAnswer;
+      }).length;
+      
       const quizData = {
         subject,
         examType,
         totalQuestions: quizState.questions.length,
-        correctAnswers: quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer === q.correctAnswer).length,
-        wrongAnswers: quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer !== q.correctAnswer).length,
-        timeSpent: Math.floor((new Date().getTime() - quizState.startTime.getTime()) / 1000), // in seconds
-        questionsAnswered: quizState.questions.map((q: QuestionWithOptions) => ({
-          questionId: q.id,
-          isCorrect: q.userAnswer === q.correctAnswer,
-          userAnswer: q.userAnswer || '',
-          correctAnswer: q.correctAnswer,
-          questionText: q.questionText,
-          optionA: q.options.A,
-          optionB: q.options.B,
-          optionC: q.options.C,
-          optionD: q.options.D
-        }))
+        correctAnswers,
+        wrongAnswers,
+        timeSpent: Math.floor((new Date().getTime() - quizState.startTime.getTime()) / 1000),
+        // ✅ FIXED: Map using quizState.selectedAnswers
+        questionsAnswered: quizState.questions.map((q: QuestionWithOptions) => {
+          const userAnswer = quizState.selectedAnswers[q.id];
+          return {
+            questionId: q.id,
+            selectedAnswer: userAnswer || '',
+            correctAnswer: q.correctAnswer,
+            isCorrect: userAnswer === q.correctAnswer,
+            questionText: q.questionText,
+            optionA: q.options.A,
+            optionB: q.options.B,
+            optionC: q.options.C,
+            optionD: q.options.D
+          };
+        })
       };
       
-      console.log('Submitting quiz data:', quizData);
+      console.log('QuizInterface - Submitting quiz data:', quizData);
+      console.log('QuizInterface - Correct answers:', correctAnswers, 'Wrong answers:', wrongAnswers);
       
-      // Call the submitQuiz function with the prepared data
       const result = await submitQuiz(quizData);
-      console.log('QuizInterface - Quiz submission result:', result);
       
-      // If we have a session ID, show popup with results instead of navigating
+      console.log('QuizInterface - Quiz submission result:', result);
+      console.log('QuizInterface - result type:', typeof result);
+      console.log('QuizInterface - result?.sessionId:', result?.sessionId);
+      
+      // Calculate results once
+      const totalQuestions = quizState.questions.length;
+      const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      const timeSpent = Math.floor((new Date().getTime() - quizState.startTime.getTime()) / 1000);
+      
+      // ✅ Single if-else-else chain (not multiple independent ifs)
       if (result?.sessionId) {
-        console.log('QuizInterface - Showing results modal with sessionId:', result.sessionId);
-
-        // Show success message
+        // SUCCESS PATH
+        console.log('✅ QuizInterface - Success! Got sessionId:', result.sessionId);
+        
         toast({
-          title: "Quiz Submitted!",
-          description: "Your results are ready.",
+          title: "Quiz Submitted Successfully!",
+          description: "Your results have been saved.",
           variant: "default",
         });
-
-        // Compute summary for display
-        const totalQuestions = quizState.questions.length;
-        const correctAnswers = quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer === q.correctAnswer).length;
-        const wrongAnswers = quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer !== q.correctAnswer).length;
-        const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-        const timeSpent = Math.floor((new Date().getTime() - quizState.startTime.getTime()) / 1000);
 
         setLastResult({
           sessionId: result.sessionId,
@@ -205,17 +224,16 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
           timeSpent,
         });
         setShowResultsModal(true);
-      }
-      
-      // If we don't have a session ID but the quiz is marked as submitted, try to use the one from state
-      if (quizState.isSubmitted && quizState.sessionId) {
-        console.log('QuizInterface - Using sessionId from quizState:', quizState.sessionId);
-        // Prefer showing modal rather than immediate navigation
-        const totalQuestions = quizState.questions.length;
-        const correctAnswers = quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer === q.correctAnswer).length;
-        const wrongAnswers = quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer !== q.correctAnswer).length;
-        const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-        const timeSpent = Math.floor((new Date().getTime() - quizState.startTime.getTime()) / 1000);
+        
+      } else if (quizState.isSubmitted && quizState.sessionId) {
+        // FALLBACK 1: Use sessionId from state
+        console.log('⚠️ QuizInterface - Using sessionId from quizState:', quizState.sessionId);
+        
+        toast({
+          title: 'Results Ready',
+          description: 'Session retrieved from state.',
+          variant: 'default',
+        });
 
         setLastResult({
           sessionId: quizState.sessionId,
@@ -226,43 +244,34 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
           timeSpent,
         });
         setShowResultsModal(true);
+        
+      } else {
+        // FALLBACK 2: No sessionId - show local results
+        console.warn('❌ QuizInterface - No sessionId found, showing local results');
+        
         toast({
-          title: 'Results Ready',
-          description: 'Session saved. You can view full breakdown anytime.',
-          variant: 'default',
+          title: 'Results Shown (Not Saved)',
+          description: 'Could not save this session. Please check your login status.',
+          variant: 'destructive',
         });
-        return;
+
+        setLastResult({
+          sessionId: 'LOCAL_ONLY',
+          score,
+          totalQuestions,
+          correctAnswers,
+          wrongAnswers,
+          timeSpent,
+        });
+        setShowResultsModal(true);
       }
-
-      // As a final fallback, compute summary locally and show modal even if the session was not saved
-      console.warn('QuizInterface - No sessionId returned; showing local summary modal as fallback');
-      const totalQuestions = quizState.questions.length;
-      const correctAnswers = quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer === q.correctAnswer).length;
-      const wrongAnswers = quizState.questions.filter((q: QuestionWithOptions) => q.userAnswer && q.userAnswer !== q.correctAnswer).length;
-      const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-      const timeSpent = Math.floor((new Date().getTime() - quizState.startTime.getTime()) / 1000);
-
-      setLastResult({
-        sessionId: 'N/A',
-        score,
-        totalQuestions,
-        correctAnswers,
-        wrongAnswers,
-        timeSpent,
-      });
-      setShowResultsModal(true);
-      toast({
-        title: 'Results Shown (Not Saved)',
-        description: 'We could not save this session. Please check your login status and try again.',
-        variant: 'destructive',
-      });
-      return;
       
     } catch (error) {
-      console.error('QuizInterface - Error submitting quiz:', error);
+      console.error('❌ QuizInterface - Error submitting quiz:', error);
       
-      // Show error to user
-      const errorMessage = error instanceof Error ? error.message : "Failed to submit quiz. Please try again.";
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Failed to submit quiz. Please try again.";
       
       toast({
         title: "Submission Error",
@@ -270,13 +279,30 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
         variant: "destructive",
       });
       
-      // If we have a session ID despite the error, still try to navigate to results
-      if (quizState.sessionId) {
-        console.log('QuizInterface - Error occurred but found sessionId in state, navigating to results');
-        onQuizComplete(quizState.sessionId);
-      }
+      // ✅ FIXED: Calculate using quizState.selectedAnswers
+      const totalQuestions = quizState.questions.length;
+      const correctAnswers = quizState.questions.filter((q: QuestionWithOptions) => {
+        const userAnswer = quizState.selectedAnswers[q.id];
+        return userAnswer && userAnswer === q.correctAnswer;
+      }).length;
+      const wrongAnswers = quizState.questions.filter((q: QuestionWithOptions) => {
+        const userAnswer = quizState.selectedAnswers[q.id];
+        return userAnswer && userAnswer !== q.correctAnswer;
+      }).length;
+      const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      const timeSpent = Math.floor((new Date().getTime() - quizState.startTime.getTime()) / 1000);
+
+      setLastResult({
+        sessionId: quizState.sessionId || 'ERROR_FALLBACK',
+        score,
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers,
+        timeSpent,
+      });
+      setShowResultsModal(true);
     }
-  }, [submitQuiz, quizState.isSubmitted, onQuizComplete, toast]);
+  }, [submitQuiz, quizState, subject, examType, toast]);
 
   const handleRetryLoad = useCallback(() => {
     console.log('QuizInterface - Retrying quiz load...');
@@ -284,14 +310,38 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
     memoizedLoadQuiz();
   }, [memoizedLoadQuiz]);
 
+  // ✅ FIXED: Enhanced explanation handler with better error handling
   const handleExplain = useCallback(async () => {
-    if (!currentQuestion) return;
+    if (!currentQuestion) {
+      console.error('❌ [handleExplain] No current question');
+      return;
+    }
+
+    console.log('🔍 [handleExplain] Starting explanation request for question:', currentQuestion.id);
+    
     setIsLoadingExplanation(true);
     setExplanationText(null);
-    const explanationResult = await getExplanation(currentQuestion.id);
-    setIsLoadingExplanation(false);
-    if (explanationResult && explanationResult.explanation) {
-      setExplanationText(explanationResult.explanation);
+    setExplanationError(null);
+    
+    try {
+      const explanationResult = await getExplanation(currentQuestion.id);
+      
+      console.log('📦 [handleExplain] Received explanation result:', explanationResult);
+      
+      if (explanationResult && explanationResult.explanation) {
+        console.log('✅ [handleExplain] Successfully loaded explanation');
+        setExplanationText(explanationResult.explanation);
+        setExplanationError(null);
+      } else {
+        console.error('❌ [handleExplain] No explanation in result');
+        setExplanationError('No explanation available for this question.');
+      }
+    } catch (error) {
+      console.error('❌ [handleExplain] Error loading explanation:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load explanation';
+      setExplanationError(errorMessage);
+    } finally {
+      setIsLoadingExplanation(false);
     }
   }, [getExplanation, currentQuestion]);
 
@@ -304,9 +354,6 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
             <div className="text-center">
               <div className="loading-spinner w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4 animate-spin"></div>
               <p className="text-muted-foreground">Loading {subject} questions...</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Debug: hasTriedLoad={hasTriedLoad.toString()}, questionsLength={quizState.questions.length}
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -322,10 +369,7 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
           <CardContent className="text-center py-12">
             <XCircle className="mx-auto text-destructive mb-4" size={48} />
             <p className="text-sm text-destructive mt-2">Error: {error}</p>
-            <p className="text-xs text-gray-500 mb-4">
-              Debug info: subject={subject}, examType={examType}, count={count}
-            </p>
-            <Button onClick={handleRetryLoad} data-testid="button-retry-quiz">
+            <Button onClick={handleRetryLoad} data-testid="button-retry-quiz" className="mt-4">
               Try Again
             </Button>
           </CardContent>
@@ -342,10 +386,6 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
           <CardContent className="text-center py-12">
             <XCircle className="mx-auto text-destructive mb-4" size={48} />
             <p className="text-destructive mb-4">No questions available for {subject} ({examType}).</p>
-            <p className="text-muted-foreground mb-4">Please try again or contact support.</p>
-            <p className="text-xs text-gray-500 mb-4">
-              Debug: hasTriedLoad={hasTriedLoad.toString()}, isLoading={isLoading.toString()}
-            </p>
             <Button onClick={handleRetryLoad} data-testid="button-retry-quiz">
               Load Questions
             </Button>
@@ -363,7 +403,6 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
           <CardContent className="text-center py-12">
             <XCircle className="mx-auto text-destructive mb-4" size={48} />
             <p className="text-destructive mb-4">Error: Questions loaded but no current question found.</p>
-            <p className="text-muted-foreground mb-4">Questions count: {quizState.questions.length}, Current index: {quizState.currentQuestionIndex}</p>
             <Button onClick={handleRetryLoad} data-testid="button-retry-quiz">
               Reload Questions
             </Button>
@@ -410,7 +449,6 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
             </div>
           </div>
           
-          {/* Progress Bar */}
           <div className="mt-4">
             <Progress 
               value={(progress.answered / progress.total) * 100} 
@@ -428,7 +466,6 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Options with immediate feedback */}
           <div className="space-y-3">
             {options.map((option) => {
               const isSelected = selectedAnswer === option.key;
@@ -436,12 +473,12 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
               const feedbackClass =
                 selectedAnswer
                   ? isOptionCorrect
-                    ? "border-green-500 bg-green-50 text-green-900"
+                    ? "border-green-500 bg-green-50 text-green-900 dark:bg-green-900/20 dark:text-green-100"
                     : isSelected
-                      ? "border-red-500 bg-red-50 text-red-900"
+                      ? "border-red-500 bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-100"
                       : "border-border bg-card"
                   : isSelected
-                    ? "selected border-primary bg-primary text-primary-foreground success-bounce"
+                    ? "selected border-primary bg-primary text-primary-foreground"
                     : "border-border bg-card hover:border-primary hover:bg-muted";
 
               return (
@@ -449,7 +486,7 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
                   key={option.key}
                   onClick={() => selectAnswer(currentQuestion.id, option.key as 'A' | 'B' | 'C' | 'D')}
                   className={cn(
-                    "option-button w-full p-4 text-left rounded-lg border-2 btn-animate transition-all duration-200",
+                    "option-button w-full p-4 text-left rounded-lg border-2 transition-all duration-200",
                     feedbackClass
                   )}
                   disabled={quizState.isSubmitted}
@@ -472,19 +509,63 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
             })}
           </div>
 
-          {/* Explanation trigger */}
-          <div className="pt-2 flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExplain} disabled={isLoadingExplanation}>
+          {/* ✅ Enhanced Explanation Section */}
+          <div className="pt-2 space-y-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExplain} 
+              disabled={isLoadingExplanation}
+              className="w-full sm:w-auto"
+            >
               <Lightbulb size={16} className="mr-2" />
-              {isLoadingExplanation ? "Loading..." : "Explain this question"}
+              {isLoadingExplanation ? "Loading explanation..." : "Get AI Explanation"}
             </Button>
-          </div>
 
-          {explanationText && (
-            <div className="mt-3 rounded-md border p-3 bg-muted/50">
-              <p className="text-sm whitespace-pre-wrap">{explanationText}</p>
-            </div>
-          )}
+            {/* Loading State */}
+            {isLoadingExplanation && (
+              <div className="rounded-md border p-4 bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-sm text-muted-foreground">Generating explanation with AI...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Explanation Text */}
+            {explanationText && !isLoadingExplanation && (
+              <div className="rounded-md border p-4 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-2 mb-2">
+                  <Lightbulb className="text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" size={18} />
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">AI Explanation</h4>
+                </div>
+                <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap leading-relaxed">
+                  {explanationText}
+                </p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {explanationError && !isLoadingExplanation && (
+              <div className="rounded-md border p-4 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="text-red-600 dark:text-red-400 mt-1 flex-shrink-0" size={18} />
+                  <div>
+                    <h4 className="font-semibold text-red-900 dark:text-red-100 mb-1">Failed to Load Explanation</h4>
+                    <p className="text-sm text-red-800 dark:text-red-200">{explanationError}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleExplain}
+                      className="mt-2"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -496,7 +577,6 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
               onClick={previousQuestion}
               disabled={quizState.currentQuestionIndex === 0}
               variant="outline"
-              className="btn-animate"
               data-testid="button-previous-question"
             >
               <ChevronLeft size={16} className="mr-1" />
@@ -504,42 +584,9 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
             </Button>
 
             <div className="flex items-center space-x-2">
-              {/* Question Navigator */}
-              <div className="hidden md:flex items-center space-x-1">
-                {quizState.questions.slice(0, 10).map((q, index) => {
-                  // Create a unique key by combining the question ID and its index
-                  const uniqueKey = `${q.id}-${index}`;
-                  return (
-                    <button
-                      key={uniqueKey}
-                      onClick={() => {
-                        // Add navigation logic if needed
-                        // For example: goToQuestion(index);
-                      }}
-                      className={cn(
-                        "w-8 h-8 rounded-full text-xs font-medium transition-colors",
-                        index === quizState.currentQuestionIndex
-                          ? "bg-primary text-primary-foreground"
-                          : quizState.selectedAnswers[q.id.toString()]
-                          ? "bg-accent text-accent-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-muted"
-                      )}
-                      data-testid={`question-nav-${index + 1}`}
-                    >
-                      {index + 1}
-                    </button>
-                  );
-                })}
-                {quizState.questions.length > 10 && (
-                  <span className="text-muted-foreground text-xs">...</span>
-                )}
-              </div>
-
-              {/* Submit Button */}
               <Button
                 onClick={() => setShowConfirmSubmit(true)}
                 disabled={quizState.isSubmitted || isSubmitting}
-                className="btn-animate"
                 data-testid="button-submit-quiz"
               >
                 <Flag size={16} className="mr-1" />
@@ -551,7 +598,6 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
               onClick={nextQuestion}
               variant="outline"
               disabled={quizState.currentQuestionIndex === quizState.questions.length - 1 || quizState.isSubmitted}
-              className="btn-animate"
               data-testid="button-next-question"
             >
               Next
@@ -563,10 +609,10 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
 
       {/* Confirmation Dialog */}
       {showConfirmSubmit && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => {
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => {
           if (e.target === e.currentTarget) setShowConfirmSubmit(false);
         }}>
-          <Card className="max-w-md mx-4">
+          <Card className="max-w-md w-full">
             <CardHeader>
               <CardTitle>Submit Quiz?</CardTitle>
             </CardHeader>
@@ -590,6 +636,96 @@ export default function QuizInterface({ subject, examType = 'JAMB', onQuizComple
                   className="flex-1"
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Results Modal */}
+      {showResultsModal && lastResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-lg w-full">
+            <CardHeader>
+              <CardTitle className="text-center text-2xl">
+                {lastResult.sessionId === 'LOCAL_ONLY' || lastResult.sessionId === 'ERROR_FALLBACK' || lastResult.sessionId === 'N/A'
+                  ? '⚠️ Quiz Completed (Not Saved)'
+                  : '✅ Quiz Completed!'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center">
+                <div className="text-6xl font-bold text-primary mb-2">
+                  {lastResult.score}%
+                </div>
+                <p className="text-muted-foreground">Your Score</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {lastResult.correctAnswers}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Correct</p>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {lastResult.wrongAnswers}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Wrong</p>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {Math.floor(lastResult.timeSpent / 60)}:{(lastResult.timeSpent % 60).toString().padStart(2, '0')}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Time</p>
+                </div>
+              </div>
+
+              {(lastResult.sessionId === 'LOCAL_ONLY' || lastResult.sessionId === 'ERROR_FALLBACK' || lastResult.sessionId === 'N/A') && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    ⚠️ This quiz was not saved to the server. You may not be logged in or there was a connection issue.
+                  </p>
+                </div>
+              )}
+
+              <div className="text-xs text-muted-foreground text-center font-mono">
+                Session ID: {lastResult.sessionId}
+              </div>
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1" 
+                  onClick={() => { 
+                    setShowResultsModal(false); 
+                    setLastResult(null); 
+                  }}
+                >
+                  Close
+                </Button>
+                <Button 
+                  className="flex-1" 
+                  onClick={() => {
+                    if (lastResult.sessionId && 
+                        lastResult.sessionId !== 'LOCAL_ONLY' && 
+                        lastResult.sessionId !== 'ERROR_FALLBACK' && 
+                        lastResult.sessionId !== 'N/A') {
+                      onQuizComplete(lastResult.sessionId);
+                    } else {
+                      setShowResultsModal(false);
+                      setLastResult(null);
+                    }
+                  }}
+                >
+                  {lastResult.sessionId && 
+                   lastResult.sessionId !== 'LOCAL_ONLY' && 
+                   lastResult.sessionId !== 'ERROR_FALLBACK' && 
+                   lastResult.sessionId !== 'N/A' 
+                    ? 'View Detailed Results' 
+                    : 'Close'}
                 </Button>
               </div>
             </CardContent>

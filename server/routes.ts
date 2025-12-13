@@ -92,6 +92,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ✅✅✅ NEW EXPLANATION ENDPOINT - THIS IS WHAT WAS MISSING ✅✅✅
+  // ✅ FIXED EXPLANATION ENDPOINT
+app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res) => {
+  try {
+    const questionId = req.params.id;
+    const userAnswer = req.query.userAnswer as string; // Get user's answer from query params
+    
+    console.log(`[Explanation] Request for question ${questionId}, userAnswer: ${userAnswer}`);
+    
+    // Get question from database
+    const question = await storage.getQuestionById(parseInt(questionId));
+    
+    if (!question) {
+      console.error(`[Explanation] Question ${questionId} not found`);
+      return res.status(404).json({ 
+        error: 'Question not found',
+        message: `No question found with ID ${questionId}`
+      });
+    }
+    
+    console.log(`[Explanation] Found question:`, {
+      id: question.id,
+      subject: question.subject,
+      questionText: question.questionText.substring(0, 50) + '...'
+    });
+    
+    // Parse options from JSON
+    let options;
+    if (typeof question.options === 'string') {
+      try {
+        options = JSON.parse(question.options);
+      } catch (e) {
+        console.error('[Explanation] Failed to parse options:', e);
+        return res.status(500).json({ error: 'Invalid question options format' });
+      }
+    } else {
+      options = question.options;
+    }
+    
+    // Ensure options have uppercase keys (A, B, C, D)
+    const normalizedOptions = {
+      A: options.A || options.a || '',
+      B: options.B || options.b || '',
+      C: options.C || options.c || '',
+      D: options.D || options.d || ''
+    };
+    
+    // Validate we have all required data
+    if (!normalizedOptions.A || !normalizedOptions.B || !normalizedOptions.C || !normalizedOptions.D) {
+      console.error('[Explanation] Missing options:', normalizedOptions);
+      return res.status(500).json({ error: 'Question is missing required options' });
+    }
+    
+    // Generate explanation
+    const explanation = await generateExplanation({
+      questionText: question.questionText,
+      options: normalizedOptions,
+      correctAnswer: question.correctAnswer,
+      subject: question.subject,
+      userAnswer: userAnswer || question.correctAnswer // Use provided userAnswer or default to correct
+    });
+    
+    console.log(`[Explanation] Generated successfully for question ${questionId}`);
+    
+    return res.status(200).json({
+      explanation: explanation.explanation,
+      keyPoints: explanation.keyPoints,
+      studyTips: explanation.studyTips,
+      questionId: questionId,
+      correctAnswer: question.correctAnswer,
+      userAnswer: userAnswer
+    });
+    
+  } catch (error) {
+    console.error('[Explanation Error]:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    return res.status(500).json({ 
+      error: 'Failed to generate explanation',
+      message: errorMessage
+    });
+  }
+});
+
   // Filtered quiz generation
   app.get('/api/quiz/generate', async (req, res) => {
     try {
@@ -194,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI explanation route
+  // AI explanation route (OLD - keeping for backward compatibility)
   app.post('/api/explain', isAuthenticated, async (req, res) => {
     try {
       const explanation = await generateExplanation(req.body);
