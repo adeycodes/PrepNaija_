@@ -280,93 +280,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   //api-teach
   // Add this NEW route to routes.ts
-  app.post("/api/teach", async (req, res) => {
-    try {
-      const { topic, subject = "JAMB" } = req.body;
+ app.post("/api/teach", async (req, res) => {
+  try {
+    const {
+      topic,
+      subject = "JAMB",
+      style = "friendly",          // e.g., "friendly", "strict", "funny", "simple", "detailed"
+      level = "average",           // e.g., "beginner", "average", "advanced", "weak student"
+      format = "explanation",      // e.g., "explanation", "step-by-step", "summary", "exam tips", "story"
+      language = "simple English"  // e.g., "simple English", "pidgin mix", "formal"
+    } = req.body;
 
-      if (!topic) {
-        return res.status(400).json({ error: "Topic is required" });
-      }
+    if (!topic || typeof topic !== "string" || topic.trim() === "") {
+      return res.status(400).json({ error: "Topic is required" });
+    }
 
-      console.log(`[Teach] Request for: ${topic} (${subject})`);
+    console.log(`[Teach] Request: "${topic}" | Subject: ${subject} | Style: ${style} | Level: ${level} | Format: ${format}`);
 
-      // Use your existing Hugging Face integration
-      const prompt = `You are a friendly Nigerian ${subject} teacher. Teach this topic in simple, engaging language with examples students can relate to. Keep it SHORT and CLEAR (under 300 words):\n\n${topic}`;
+    // Dynamic system prompt based on parameters
+    let systemPrompt = `You are a Nigerian ${subject} teacher. `;
 
-      const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 500,
+    // Adjust tone/style
+    if (style === "strict") {
+      systemPrompt += "Be firm, disciplined, and direct. Push the student to focus and work hard. ";
+    } else if (style === "funny") {
+      systemPrompt += "Be humorous and entertaining. Use jokes and light-hearted examples to make learning fun. ";
+    } else if (style === "simple") {
+      systemPrompt += "Explain everything in the simplest way possible, like teaching a younger sibling. ";
+    } else {
+      systemPrompt += "Be friendly, encouraging, and patient. Use relatable Nigerian examples. "; // default friendly
+    }
+
+    // Adjust for student level
+    if (level === "beginner" || level === "weak") {
+      systemPrompt += "The student is struggling. Start from the basics, repeat key points, and build confidence. ";
+    } else if (level === "advanced") {
+      systemPrompt += "The student is strong. Go deeper, include advanced tips and common exam tricks. ";
+    } else {
+      systemPrompt += "The student is average. Teach at a balanced pace with clear examples. "; // default
+    }
+
+    // Adjust format
+    if (format === "step-by-step") {
+      systemPrompt += "Teach using clear numbered steps. ";
+    } else if (format === "summary") {
+      systemPrompt += "Give a short, powerful summary with key points to remember. ";
+    } else if (format === "exam tips") {
+      systemPrompt += "Focus on exam strategy, common mistakes, and how to score high. ";
+    } else if (format === "story") {
+      systemPrompt += "Teach the topic through a short relatable story or analogy. ";
+    } else {
+      systemPrompt += "Give a clear explanation with examples. "; // default
+    }
+
+    // Language style
+    if (language.includes("pidgin")) {
+      systemPrompt += "Mix in light Pidgin English where it helps understanding (e.g., 'You dey hear?'). ";
+    }
+
+    // Final instructions
+    systemPrompt += `Keep your response SHORT (under 300 words), clear, and focused on helping the student understand and pass their exam. Topic: ${topic}`;
+
+    let teaching = `Let's learn about ${topic}. This is important for your exam. Study hard, practice past questions, and you'll do well! 💪`;
+    let provider = "fallback";
+
+    // === Groq First ===
+    if (process.env.GROQ_API_KEY) {
+      try {
+        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "mixtral-8x7b-32768",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: topic }
+            ],
+            max_tokens: 600,
             temperature: 0.7,
             top_p: 0.95
-          }
-        })
-      });
+          })
+        });
 
-      if (!response.ok) {
-        throw new Error(`API responded with ${response.status}`);
+        if (groqResponse.ok) {
+          const data = await groqResponse.json();
+          teaching = data.choices?.[0]?.message?.content?.trim() || teaching;
+          provider = "groq";
+
+          return res.json({
+            success: true,
+            provider,
+            topic,
+            subject,
+            style,
+            level,
+            teaching
+          });
+        }
+      } catch (e) {
+        console.warn("[Teach] Groq failed, trying Hugging Face");
       }
-
-      const data = await response.json();
-      const teaching = data[0]?.generated_text || data.generated_text ||
-        `Here's what you need to know about ${topic}: Study the key concepts, practice examples, and review past questions.`;
-
-      res.json({
-        success: true,
-        topic,
-        subject,
-        teaching
-      });
-
-    } catch (error) {
-      console.error("Teaching error:", error);
-      res.json({
-        success: false,
-        teaching: `I'd be happy to teach you about that topic! Here's a summary: Review your textbook on this concept and practice with past questions.`,
-        isFallback: true
-      });
     }
-  });
 
-  // test point
-  // Test endpoint to check if Hugging Face is working
-  app.get("/api/test-ai", async (req, res) => {
-    try {
-      const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          inputs: "Hello, are you working?",
-          parameters: {
-            max_new_tokens: 50
-          }
-        })
-      });
+    // === Hugging Face Fallback ===
+    if (process.env.HUGGINGFACE_API_KEY) {
+      try {
+        const hfResponse = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            inputs: systemPrompt + "\n\nTeach now:",
+            parameters: {
+              max_new_tokens: 600,
+              temperature: 0.7,
+              top_p: 0.95
+            }
+          })
+        });
 
-      const data = await response.json();
-      res.json({
-        status: "working",
-        response: data,
-        message: "Hugging Face API is connected!"
-      });
-    } catch (error) {
-      res.json({
-        status: "error",
-        message: error.message,
-        help: "Check your HUGGINGFACE_API_KEY in .env file"
-      });
+        if (hfResponse.ok) {
+          const data = await hfResponse.json();
+          teaching = (data[0]?.generated_text || data.generated_text || teaching).trim();
+          provider = "huggingface";
+
+          return res.json({
+            success: true,
+            provider,
+            topic,
+            subject,
+            style,
+            level,
+            teaching
+          });
+        }
+      } catch (e) {
+        console.warn("[Teach] Hugging Face failed");
+      }
     }
-  });
 
+    // Final fallback
+    res.json({
+      success: false,
+      provider: "fallback",
+      topic,
+      subject,
+      teaching,
+      isFallback: true
+    });
+
+  } catch (error) {
+    console.error("[Teach] Error:", error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
   // Filtered quiz generation
   app.get('/api/quiz/generate', async (req, res) => {
     try {
