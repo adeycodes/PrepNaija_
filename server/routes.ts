@@ -12,7 +12,7 @@ import { insertQuizSessionSchema, insertUserProgressSchema } from "@shared/schem
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
-  
+
   // Auth routes (login, signup, etc.)
   setupAuthRoutes(app);
 
@@ -31,7 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       const profile = await storage.getProfile(userId);
-      
+
       res.json({
         ...user,
         profile,
@@ -47,20 +47,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const profileData = { id: userId, ...req.body };
-      
+
       const existingProfile = await storage.getProfile(userId);
       let profile;
-      
+
       if (existingProfile) {
         profile = await storage.updateProfile(userId, req.body);
       } else {
         profile = await storage.createProfile(profileData);
       }
-      
+
       res.json(profile);
     } catch (error) {
       console.error("Error setting up profile:", error);
       res.status(500).json({ message: "Failed to setup profile" });
+    }
+  });
+
+  // Update this route in routes.ts - your current chat route at line ~54
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message, mode = "general" } = req.body;
+
+      if (!message || message.trim().length < 2) {
+        return res.status(400).json({
+          error: "Message is required",
+          message: "Please enter a question or topic"
+        });
+      }
+
+      console.log(`[Chat] 📨 Received ${mode} chat request:`, message.substring(0, 100));
+
+      // Use the same API pattern as your explanation service
+      const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+      if (!GROQ_API_KEY) {
+        console.log('[Chat] ⚠️ No GROQ_API_KEY found, using fallback');
+        return res.json({
+          response: `I'd be happy to help with "${message}". This seems like an important topic. You should review your textbook, practice past questions, and focus on understanding the key concepts.`,
+          isFallback: true
+        });
+      }
+
+      // Different system prompts based on mode
+      let systemPrompt = 'You are a helpful Nigerian exam assistant. Answer questions clearly and helpfully.';
+
+      if (mode === "teach") {
+        systemPrompt = 'You are a friendly Nigerian JAMB teacher. Teach topics in simple, engaging language with examples students can relate to. Keep it SHORT and CLEAR (under 250 words).';
+      } else if (mode === "solve") {
+        systemPrompt = 'You are a Nigerian exam tutor. Help solve academic problems step-by-step. Show your reasoning clearly.';
+      } else if (mode === "explain") {
+        systemPrompt = 'You are a patient Nigerian tutor. Explain concepts clearly with examples. Break down complex ideas into simple parts.';
+      }
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile', // Same model as your explanation service
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: message
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Chat] ❌ Groq API error:', response.status, errorText);
+        throw new Error(`API responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices?.[0]?.message?.content;
+
+      if (!aiResponse || aiResponse.length < 20) {
+        throw new Error('AI response too short');
+      }
+
+      console.log('[Chat] ✅ Success! Response length:', aiResponse.length);
+
+      return res.json({
+        response: aiResponse.trim(),
+        mode,
+        success: true
+      });
+
+    } catch (error) {
+      console.error("[Chat] ❌ Error:", error);
+
+      // Fallback response
+      const fallbackResponses = [
+        `I understand you're asking about that topic. It's important to study it well for your exams. Review your notes and practice with past questions.`,
+        `That's a good question! For detailed explanations, check your textbook and practice similar problems.`,
+        `I recommend focusing on understanding the core concepts. Practice regularly and review your mistakes.`
+      ];
+
+      return res.json({
+        response: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)],
+        isFallback: true,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -81,8 +180,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { subject, count } = req.params;
       const { examType } = req.query;
       const questions = await questionService.getQuestionsForQuiz(
-        subject, 
-        parseInt(count), 
+        subject,
+        parseInt(count),
         examType as string || 'JAMB'
       );
       res.json(questions);
@@ -94,88 +193,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ✅✅✅ NEW EXPLANATION ENDPOINT - THIS IS WHAT WAS MISSING ✅✅✅
   // ✅ FIXED EXPLANATION ENDPOINT
-app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res) => {
-  try {
-    const questionId = req.params.id;
-    const userAnswer = req.query.userAnswer as string; // Get user's answer from query params
-    
-    console.log(`[Explanation] Request for question ${questionId}, userAnswer: ${userAnswer}`);
-    
-    // Get question from database
-    const question = await storage.getQuestionById(parseInt(questionId));
-    
-    if (!question) {
-      console.error(`[Explanation] Question ${questionId} not found`);
-      return res.status(404).json({ 
-        error: 'Question not found',
-        message: `No question found with ID ${questionId}`
+  app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res) => {
+    try {
+      const questionId = req.params.id;
+      const userAnswer = req.query.userAnswer as string; // Get user's answer from query params
+
+      console.log(`[Explanation] Request for question ${questionId}, userAnswer: ${userAnswer}`);
+
+      // Get question from database
+      const question = await storage.getQuestionById(parseInt(questionId));
+
+      if (!question) {
+        console.error(`[Explanation] Question ${questionId} not found`);
+        return res.status(404).json({
+          error: 'Question not found',
+          message: `No question found with ID ${questionId}`
+        });
+      }
+
+      console.log(`[Explanation] Found question:`, {
+        id: question.id,
+        subject: question.subject,
+        questionText: question.questionText.substring(0, 50) + '...'
+      });
+
+      // Parse options from JSON
+      let options;
+      if (typeof question.options === 'string') {
+        try {
+          options = JSON.parse(question.options);
+        } catch (e) {
+          console.error('[Explanation] Failed to parse options:', e);
+          return res.status(500).json({ error: 'Invalid question options format' });
+        }
+      } else {
+        options = question.options;
+      }
+
+      // Ensure options have uppercase keys (A, B, C, D)
+      const normalizedOptions = {
+        A: options.A || options.a || '',
+        B: options.B || options.b || '',
+        C: options.C || options.c || '',
+        D: options.D || options.d || ''
+      };
+
+      // Validate we have all required data
+      if (!normalizedOptions.A || !normalizedOptions.B || !normalizedOptions.C || !normalizedOptions.D) {
+        console.error('[Explanation] Missing options:', normalizedOptions);
+        return res.status(500).json({ error: 'Question is missing required options' });
+      }
+
+      // Generate explanation
+      const explanation = await generateExplanation({
+        questionText: question.questionText,
+        options: normalizedOptions,
+        correctAnswer: question.correctAnswer,
+        subject: question.subject,
+        userAnswer: userAnswer || question.correctAnswer // Use provided userAnswer or default to correct
+      });
+
+      console.log(`[Explanation] Generated successfully for question ${questionId}`);
+
+      return res.status(200).json({
+        explanation: explanation.explanation,
+        keyPoints: explanation.keyPoints,
+        studyTips: explanation.studyTips,
+        questionId: questionId,
+        correctAnswer: question.correctAnswer,
+        userAnswer: userAnswer
+      });
+
+    } catch (error) {
+      console.error('[Explanation Error]:', error);
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      return res.status(500).json({
+        error: 'Failed to generate explanation',
+        message: errorMessage
       });
     }
-    
-    console.log(`[Explanation] Found question:`, {
-      id: question.id,
-      subject: question.subject,
-      questionText: question.questionText.substring(0, 50) + '...'
-    });
-    
-    // Parse options from JSON
-    let options;
-    if (typeof question.options === 'string') {
-      try {
-        options = JSON.parse(question.options);
-      } catch (e) {
-        console.error('[Explanation] Failed to parse options:', e);
-        return res.status(500).json({ error: 'Invalid question options format' });
+  });
+
+  //api-teach
+  // Add this NEW route to routes.ts
+  app.post("/api/teach", async (req, res) => {
+    try {
+      const { topic, subject = "JAMB" } = req.body;
+
+      if (!topic) {
+        return res.status(400).json({ error: "Topic is required" });
       }
-    } else {
-      options = question.options;
+
+      console.log(`[Teach] Request for: ${topic} (${subject})`);
+
+      // Use your existing Hugging Face integration
+      const prompt = `You are a friendly Nigerian ${subject} teacher. Teach this topic in simple, engaging language with examples students can relate to. Keep it SHORT and CLEAR (under 300 words):\n\n${topic}`;
+
+      const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: {
+            max_new_tokens: 500,
+            temperature: 0.7,
+            top_p: 0.95
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      const teaching = data[0]?.generated_text || data.generated_text ||
+        `Here's what you need to know about ${topic}: Study the key concepts, practice examples, and review past questions.`;
+
+      res.json({
+        success: true,
+        topic,
+        subject,
+        teaching
+      });
+
+    } catch (error) {
+      console.error("Teaching error:", error);
+      res.json({
+        success: false,
+        teaching: `I'd be happy to teach you about that topic! Here's a summary: Review your textbook on this concept and practice with past questions.`,
+        isFallback: true
+      });
     }
-    
-    // Ensure options have uppercase keys (A, B, C, D)
-    const normalizedOptions = {
-      A: options.A || options.a || '',
-      B: options.B || options.b || '',
-      C: options.C || options.c || '',
-      D: options.D || options.d || ''
-    };
-    
-    // Validate we have all required data
-    if (!normalizedOptions.A || !normalizedOptions.B || !normalizedOptions.C || !normalizedOptions.D) {
-      console.error('[Explanation] Missing options:', normalizedOptions);
-      return res.status(500).json({ error: 'Question is missing required options' });
+  });
+
+  // test point
+  // Test endpoint to check if Hugging Face is working
+  app.get("/api/test-ai", async (req, res) => {
+    try {
+      const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inputs: "Hello, are you working?",
+          parameters: {
+            max_new_tokens: 50
+          }
+        })
+      });
+
+      const data = await response.json();
+      res.json({
+        status: "working",
+        response: data,
+        message: "Hugging Face API is connected!"
+      });
+    } catch (error) {
+      res.json({
+        status: "error",
+        message: error.message,
+        help: "Check your HUGGINGFACE_API_KEY in .env file"
+      });
     }
-    
-    // Generate explanation
-    const explanation = await generateExplanation({
-      questionText: question.questionText,
-      options: normalizedOptions,
-      correctAnswer: question.correctAnswer,
-      subject: question.subject,
-      userAnswer: userAnswer || question.correctAnswer // Use provided userAnswer or default to correct
-    });
-    
-    console.log(`[Explanation] Generated successfully for question ${questionId}`);
-    
-    return res.status(200).json({
-      explanation: explanation.explanation,
-      keyPoints: explanation.keyPoints,
-      studyTips: explanation.studyTips,
-      questionId: questionId,
-      correctAnswer: question.correctAnswer,
-      userAnswer: userAnswer
-    });
-    
-  } catch (error) {
-    console.error('[Explanation Error]:', error);
-    
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    return res.status(500).json({ 
-      error: 'Failed to generate explanation',
-      message: errorMessage
-    });
-  }
-});
+  });
 
   // Filtered quiz generation
   app.get('/api/quiz/generate', async (req, res) => {
@@ -295,13 +483,13 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
     try {
       const userId = req.user.id;
       const profile = await storage.getProfile(userId);
-      
+
       if (!profile?.phone) {
         return res.status(400).json({ message: "Phone number not found" });
       }
 
       const result = await sendStudyReminder(profile.phone, profile.fullName || "Student");
-      
+
       // Log the SMS notification
       await storage.createSmsNotification({
         userId,
@@ -333,7 +521,7 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
   app.get('/api/aloc/test', async (req, res) => {
     try {
       const isConnected = await alocService.testConnection();
-      
+
       if (isConnected) {
         // Test fetching a sample question
         const questions = await alocService.fetchQuestions('Mathematics', 1, 'JAMB');
@@ -362,11 +550,11 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
   app.post('/api/aloc/seed-comprehensive', async (req, res) => {
     try {
       const { startYear = 2015, endYear = 2025 } = req.body;
-      
+
       console.log(`🚀 Starting comprehensive ALOC seeding (${startYear}-${endYear})...`);
-      
+
       const results = await alocService.seedComprehensiveQuestions(startYear, endYear);
-      
+
       res.json({
         success: true,
         message: `Comprehensive seeding completed for years ${startYear}-${endYear}`,
@@ -375,11 +563,11 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
           totalSuccessful: results.totalSuccessful,
           totalErrors: results.totalErrors,
           bySubject: results.bySubject,
-          successRate: results.totalAttempted > 0 ? 
+          successRate: results.totalAttempted > 0 ?
             ((results.totalSuccessful / results.totalAttempted) * 100).toFixed(2) + '%' : '0%'
         }
       });
-      
+
     } catch (error) {
       console.error('Comprehensive seeding failed:', error);
       res.status(500).json({
@@ -394,18 +582,18 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
     try {
       const { subject, examType } = req.params;
       const { startYear = 2015, endYear = 2025 } = req.query;
-      
+
       const coverage = await alocService.analyzeQuestionCoverage(
         subject,
         examType,
         parseInt(startYear as string),
         parseInt(endYear as string)
       );
-      
+
       const availableYears = Object.keys(coverage).filter(year => coverage[parseInt(year)] > 0);
       const totalYears = Object.keys(coverage).length;
       const coveragePercentage = (availableYears.length / totalYears * 100).toFixed(2);
-      
+
       res.json({
         subject,
         examType,
@@ -416,7 +604,7 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
         totalYearsChecked: totalYears,
         yearsWithQuestions: availableYears.length
       });
-      
+
     } catch (error) {
       console.error('Coverage analysis failed:', error);
       res.status(500).json({
@@ -429,13 +617,13 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
   app.get('/api/aloc/recent/:subject/:examType/:count', async (req, res) => {
     try {
       const { subject, examType, count } = req.params;
-      
+
       const questions = await alocService.fetchRecentQuestions(
         subject,
         parseInt(count),
         examType
       );
-      
+
       res.json({
         subject,
         examType,
@@ -450,7 +638,7 @@ app.get('/api/questions/:id/explanation', isAuthenticated, async (req: any, res)
           hasSolution: !!q.solution
         }))
       });
-      
+
     } catch (error) {
       console.error('Recent questions fetch failed:', error);
       res.status(500).json({

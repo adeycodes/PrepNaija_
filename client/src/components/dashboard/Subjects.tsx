@@ -14,7 +14,9 @@ import {
   Play,
   TrendingUp,
   Target,
-  Clock
+  Clock,
+  BookOpen,
+  GraduationCap
 } from "lucide-react";
 
 const SUBJECTS = [
@@ -23,13 +25,15 @@ const SUBJECTS = [
     name: "Mathematics",
     icon: Calculator,
     color: "bg-blue-500",
+    gradient: "from-blue-500 to-indigo-600",
     description: "Numbers, algebra, geometry, and calculations"
   },
   {
     id: "English",
-    name: "English Language",
+    name: "Use of English",
     icon: BookText,
     color: "bg-green-500",
+    gradient: "from-green-500 to-emerald-600",
     description: "Grammar, comprehension, and vocabulary"
   },
   {
@@ -37,6 +41,7 @@ const SUBJECTS = [
     name: "Physics",
     icon: Atom,
     color: "bg-purple-500",
+    gradient: "from-purple-500 to-pink-600",
     description: "Motion, forces, energy, and matter"
   },
   {
@@ -44,6 +49,7 @@ const SUBJECTS = [
     name: "Chemistry",
     icon: FlaskConical,
     color: "bg-orange-500",
+    gradient: "from-orange-500 to-red-600",
     description: "Elements, compounds, and reactions"
   },
   {
@@ -51,10 +57,12 @@ const SUBJECTS = [
     name: "Biology",
     icon: Dna,
     color: "bg-emerald-500",
+    gradient: "from-emerald-500 to-teal-600",
     description: "Living organisms and life processes"
   }
 ];
 
+// File: client/src/components/dashboard/Subjects.tsx
 export default function Subjects() {
   const [, setLocation] = useLocation();
   const { data: progress } = useQuery({
@@ -87,9 +95,27 @@ export default function Subjects() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Subjects</h1>
-          <p className="text-muted-foreground">Choose a subject to start practicing</p>
+          <p className="text-muted-foreground">Learn concepts, then practice with quizzes</p>
         </div>
       </div>
+
+      {/* Learning Path Banner */}
+      <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-none">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-6 w-6" />
+                <h3 className="text-xl font-bold">AI-Powered Study Path</h3>
+              </div>
+              <p className="text-blue-50">
+                Learn each topic with AI guidance before taking practice quizzes
+              </p>
+            </div>
+            <BookOpen className="h-16 w-16 opacity-20" />
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {SUBJECTS.map((subject) => {
@@ -133,24 +159,47 @@ export default function Subjects() {
                   </div>
                 </div>
 
+                {/* Learning Recommendation */}
+                {subjectProgress.questionsAttempted === 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs text-blue-800 flex items-center">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Start by learning the concepts first!
+                    </p>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
-                <div className="flex space-x-2 pt-2">
+                <div className="space-y-2 pt-2">
+                  {/* Learn Button - Primary Action */}
                   <Button 
-                    className="flex-1" 
+                    className={`w-full bg-gradient-to-r ${subject.gradient} hover:opacity-90`}
                     size="sm"
-                    onClick={() => setLocation('/quiz-selector')}
+                    onClick={() => setLocation(`/study-path?subject=${subject.id}`)}
                   >
-                    <Play className="h-4 w-4 mr-2" />
-                    Start Quiz
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Learn Topics
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setLocation('/dashboard')} // Will show progress for this subject
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Progress
-                  </Button>
+                  
+                  {/* Secondary Actions */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLocation('/quiz-selector')}
+                    >
+                      <Play className="h-4 w-4 mr-1" />
+                      Practice
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation('/dashboard')}
+                    >
+                      <TrendingUp className="h-4 w-4 mr-1" />
+                      Progress
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -158,30 +207,32 @@ export default function Subjects() {
         })}
       </div>
 
-      {/* Subject Recommendations */}
+      {/* Learning Tips */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Target className="h-5 w-5" />
-            <span>Recommendations</span>
+            <span>Study Recommendations</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center space-x-3">
-                <Calculator className="h-8 w-8 text-blue-600" />
+                <BookOpen className="h-8 w-8 text-blue-600" />
                 <div>
-                  <p className="font-medium">Focus on Mathematics</p>
-                  <p className="text-sm text-muted-foreground">You haven't practiced this subject recently</p>
+                  <p className="font-medium">Learn Before Practice</p>
+                  <p className="text-sm text-muted-foreground">
+                    Use AI-powered lessons to understand concepts deeply
+                  </p>
                 </div>
               </div>
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => setLocation('/quiz-selector')}
+                onClick={() => setLocation('/study-path')}
               >
-                Practice Now
+                Start Learning
               </Button>
             </div>
 
@@ -190,11 +241,25 @@ export default function Subjects() {
                 <Clock className="h-8 w-8 text-green-600" />
                 <div>
                   <p className="font-medium">Daily Goal</p>
-                  <p className="text-sm text-muted-foreground">Complete 20 questions across all subjects</p>
+                  <p className="text-sm text-muted-foreground">
+                    Complete 3 topics and 20 practice questions daily
+                  </p>
                 </div>
               </div>
               <div className="text-sm font-medium text-green-600">
-                Progress: 60%
+                On Track! 🎯
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <GraduationCap className="h-8 w-8 text-purple-600" />
+                <div>
+                  <p className="font-medium">Sequential Learning</p>
+                  <p className="text-sm text-muted-foreground">
+                    Topics unlock as you complete previous ones
+                  </p>
+                </div>
               </div>
             </div>
           </div>

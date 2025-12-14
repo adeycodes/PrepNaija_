@@ -9,6 +9,9 @@ import Progress from "@/components/dashboard/Progress";
 import History from "@/components/dashboard/History";
 import Achievements from "@/components/dashboard/Achievements";
 import Profile from "@/components/dashboard/Profile";
+import StudyPath from "./StudyPath";  
+import { Import } from "lucide-react";
+import StudyPathSystem from "@/components/dashboard/StudyPathSystem";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -50,6 +53,11 @@ export default function Dashboard() {
         return <Overview />;
       case 'subjects':
         return <Subjects />;
+      case 'study-path':
+        return <StudyPathSystem />;
+      case 'learn':
+        return <StudyPathSystem />; 
+      
       case 'progress':
         return <Progress />;
       case 'history':

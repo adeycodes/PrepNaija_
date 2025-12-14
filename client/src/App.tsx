@@ -20,6 +20,7 @@ import Signup from "@/pages/Signup";
 import AuthConfirmed from "@/pages/AuthConfirmed";
 import AuthError from "@/pages/AuthError";
 import NotFound from "@/pages/not-found";
+import StudyPath from "@/pages/StudyPath";
 
 function Router() {
   return (
@@ -29,37 +30,49 @@ function Router() {
       <Route path="/auth/confirmed" component={AuthConfirmed} />
       <Route path="/auth/error" component={AuthError} />
       <Route path="/" component={Landing} />
-      
+
       {/* Protected Routes */}
       <Route path="/dashboard">
         <ProtectedRoute>
           <Dashboard />
         </ProtectedRoute>
       </Route>
+
       <Route path="/quiz-selector">
         <ProtectedRoute>
           <QuizSelectorPage />
         </ProtectedRoute>
       </Route>
+
       <Route path="/quiz" component={Quiz} />
+
       <Route path="/results/:sessionId">
         <ProtectedRoute>
           <Results />
         </ProtectedRoute>
       </Route>
+
       <Route path="/profile">
         <ProtectedRoute>
           <Profile />
         </ProtectedRoute>
       </Route>
+
       <Route path="/settings">
         <ProtectedRoute>
           <Settings />
         </ProtectedRoute>
       </Route>
+
       <Route path="/practice">
         <ProtectedRoute>
           <Practice />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/study-path">
+        <ProtectedRoute>
+          <StudyPath />
         </ProtectedRoute>
       </Route>
 
@@ -67,6 +80,7 @@ function Router() {
     </Switch>
   );
 }
+
 
 function App() {
   return (

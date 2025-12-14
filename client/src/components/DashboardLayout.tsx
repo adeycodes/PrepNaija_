@@ -40,6 +40,12 @@ const sidebarItems = [
     description: 'Practice questions'
   },
   {
+    id: 'study-path',
+    label: 'Study Path',
+    icon: Zap,
+    description: 'Personalized learning'
+  },
+  {
     id: 'progress',
     label: 'My Progress',
     icon: BarChart3,
@@ -231,6 +237,7 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {activeTab === 'overview' && 'Welcome back, keep up the great work!'}
                 {activeTab === 'subjects' && 'Choose a subject to practice'}
+                {activeTab === 'study-path' && 'Follow your personalized study path'}
                 {activeTab === 'progress' && 'Track your learning journey'}
                 {activeTab === 'history' && 'Review your past quiz sessions'}
                 {activeTab === 'achievements' && 'Celebrate your milestones'}
