@@ -149,7 +149,7 @@ export default function History() {
           </CardHeader>
           <CardContent className="space-y-4">
             {Object.entries(subjectStats).map(([subject, stats]) => {
-              const avgScore = Math.round(stats.totalScore / stats.count);
+              // const avgScore = Math.round(stats.totalScore / stats.count);
               return (
                 <div key={subject} className="flex items-center justify-between">
                   <div>

@@ -3,16 +3,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  GraduationCap, 
-  Brain, 
-  WifiOff, 
-  TrendingUp, 
-  MessageSquare, 
-  Gamepad, 
-  Clock, 
-  University, 
-  Award, 
+import PrepNaija from "@/assets/prepnaija_logo.png";
+
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+import {
+  GraduationCap,
+  Brain,
+  Mail,
+  Instagram,
+  Twitter,
+  MessageCircle,
+  WifiOff,
+  TrendingUp,
+  MessageSquare,
+  Gamepad,
+  Clock,
+  University,
+  Award,
   Users,
   Star,
   Calculator,
@@ -48,6 +59,53 @@ export default function Landing() {
 
   const handleSignup = () => {
     window.location.href = "/signup";
+
+  };
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setStatus("idle");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus("success");
+        setFormData({ name: "", email: "", message: "" });
+      } else {
+        setStatus("error");
+        console.error("Error:", data.error);
+      }
+    } catch (err) {
+      setStatus("error");
+      console.error("Network error:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -58,41 +116,45 @@ export default function Landing() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <GraduationCap className="text-primary-foreground" size={16} />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+                  <img
+                    src={PrepNaija}
+                    alt="PrepNaija Logo"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <span className="text-xl font-bold text-foreground">PrepNaija</span>
+                <span className="text-3xl ml-0"><strong>Prep</strong><span className="text-primary"><strong>Naija</strong></span></span>
               </div>
             </div>
-            
+
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
               <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             </div>
-            
+
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={handleLogin}
                 data-testid="button-login-nav"
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-white"
               >
                 Login
               </Button>
-              <Button 
+              <Button
                 onClick={handleSignup}
                 data-testid="button-signup-nav"
-                className="bg-primary text-primary-foreground hover:bg-accent"
+                className="bg-primary text-primary-foreground  hover:bg-accent"
               >
                 Sign Up Free
               </Button>
             </div>
-            
+
             <div className="md:hidden">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -104,7 +166,7 @@ export default function Landing() {
               </Button>
             </div>
           </div>
-          
+
           {/* Mobile Menu */}
           {isMenuOpen && (
             <div className="md:hidden border-t border-border py-4 space-y-2">
@@ -126,20 +188,20 @@ export default function Landing() {
                 Ace Your <span className="text-primary">JAMB, WAEC</span> & <span className="text-accent">NECO</span> Exams
               </h1>
               <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                Join over 50,000 Nigerian students using AI-powered practice questions, 
+                Join over 50,000 Nigerian students using AI-powered practice questions,
                 personalized study plans, and offline mode to achieve their dream scores.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   onClick={handleSignup}
                   data-testid="button-start-practice"
                   className="bg-primary text-primary-foreground hover:bg-accent btn-animate text-lg px-8 py-4"
                 >
                   Start Free Practice
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="lg"
                   data-testid="button-watch-demo"
                   className="text-lg px-8 py-4 btn-animate"
@@ -162,7 +224,7 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            
+
             <div className="relative">
               {/* Dashboard Preview Mockup */}
               <Card className="hover-lift shadow-2xl">
@@ -174,7 +236,7 @@ export default function Landing() {
                       <span>Today</span>
                     </div>
                   </div>
-                  
+
                   {/* Subject Cards */}
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <Card className="bg-muted">
@@ -198,7 +260,7 @@ export default function Landing() {
                       </CardContent>
                     </Card>
                   </div>
-                  
+
                   {/* Recent Activity */}
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
@@ -235,11 +297,11 @@ export default function Landing() {
               Everything You Need to Succeed
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              From AI-powered explanations to offline practice, PrepNaija gives you all the tools 
+              From AI-powered explanations to offline practice, PrepNaija gives you all the tools
               to ace your Nigerian exams with confidence.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature Cards */}
             <Card className="btn-animate border card-enter card-enter-active stagger-1">
@@ -249,7 +311,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-xl font-semibold text-card-foreground mb-4">AI-Powered Explanations</h3>
                 <p className="text-muted-foreground mb-4">
-                  Get instant, detailed explanations for every wrong answer. Our AI breaks down complex concepts 
+                  Get instant, detailed explanations for every wrong answer. Our AI breaks down complex concepts
                   into simple, easy-to-understand steps.
                 </p>
                 <div className="text-sm text-primary font-medium flex items-center">
@@ -265,7 +327,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-xl font-semibold text-card-foreground mb-4">Offline Mode</h3>
                 <p className="text-muted-foreground mb-4">
-                  Practice anywhere, anytime. Download questions to your device and study even 
+                  Practice anywhere, anytime. Download questions to your device and study even
                   without internet connection. Perfect for areas with poor network.
                 </p>
                 <div className="text-sm text-accent font-medium flex items-center">
@@ -281,7 +343,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-xl font-semibold text-card-foreground mb-4">Progress Tracking</h3>
                 <p className="text-muted-foreground mb-4">
-                  Khan Academy-style progress tracking shows your mastery level in each subject. 
+                  Khan Academy-style progress tracking shows your mastery level in each subject.
                   Visualize your growth and identify areas that need more practice.
                 </p>
                 <div className="text-sm text-primary font-medium flex items-center">
@@ -297,7 +359,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-xl font-semibold text-card-foreground mb-4">SMS Reminders</h3>
                 <p className="text-muted-foreground mb-4">
-                  Never miss a practice session. Get daily study reminders and quiz results 
+                  Never miss a practice session. Get daily study reminders and quiz results
                   sent directly to your phone via SMS.
                 </p>
                 <div className="text-sm text-accent font-medium flex items-center">
@@ -313,7 +375,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-xl font-semibold text-card-foreground mb-4">Gamification</h3>
                 <p className="text-muted-foreground mb-4">
-                  Earn energy points, unlock achievements, and compete with friends. 
+                  Earn energy points, unlock achievements, and compete with friends.
                   Make studying fun with our engaging reward system.
                 </p>
                 <div className="text-sm text-primary font-medium flex items-center">
@@ -329,7 +391,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-xl font-semibold text-card-foreground mb-4">Timed Practice</h3>
                 <p className="text-muted-foreground mb-4">
-                  Simulate real exam conditions with our 30-minute timed sessions. 
+                  Simulate real exam conditions with our 30-minute timed sessions.
                   Build confidence and improve your time management skills.
                 </p>
                 <div className="text-sm text-accent font-medium flex items-center">
@@ -352,7 +414,7 @@ export default function Landing() {
               Join thousands of successful students who've improved their scores with PrepNaija
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
@@ -360,7 +422,7 @@ export default function Landing() {
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-4">Sign Up & Choose Subjects</h3>
               <p className="text-muted-foreground">
-                Create your free account and select the subjects you want to practice. 
+                Create your free account and select the subjects you want to practice.
                 Choose from Mathematics, English, Physics, Chemistry, and Biology.
               </p>
             </div>
@@ -371,7 +433,7 @@ export default function Landing() {
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-4">Take Practice Quizzes</h3>
               <p className="text-muted-foreground">
-                Start with 20-question quizzes tailored to your level. Get instant feedback 
+                Start with 20-question quizzes tailored to your level. Get instant feedback
                 and AI explanations for every answer.
               </p>
             </div>
@@ -382,15 +444,15 @@ export default function Landing() {
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-4">Track Progress & Improve</h3>
               <p className="text-muted-foreground">
-                Monitor your progress with visual charts, achieve mastery in topics, 
+                Monitor your progress with visual charts, achieve mastery in topics,
                 and watch your scores improve over time.
               </p>
             </div>
           </div>
 
           <div className="text-center mt-12">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               onClick={handleSignup}
               data-testid="button-start-journey"
               className="bg-primary text-primary-foreground hover:bg-accent hover-lift text-lg px-8 py-4"
@@ -412,7 +474,7 @@ export default function Landing() {
               Authentic questions for all major Nigerian examinations
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="hover-lift border text-center">
               <CardContent className="p-8">
@@ -421,7 +483,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-2xl font-bold text-card-foreground mb-4">JAMB UTME</h3>
                 <p className="text-muted-foreground mb-6">
-                  Comprehensive practice for Joint Admissions and Matriculation Board exams. 
+                  Comprehensive practice for Joint Admissions and Matriculation Board exams.
                   Over 10,000 questions covering all subjects.
                 </p>
                 <div className="space-y-2 text-sm text-left">
@@ -448,7 +510,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-2xl font-bold text-card-foreground mb-4">WAEC SSCE</h3>
                 <p className="text-muted-foreground mb-6">
-                  West African Senior School Certificate Examination preparation with 
+                  West African Senior School Certificate Examination preparation with
                   detailed solutions and marking schemes.
                 </p>
                 <div className="space-y-2 text-sm text-left">
@@ -475,7 +537,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-2xl font-bold text-card-foreground mb-4">NECO SSCE</h3>
                 <p className="text-muted-foreground mb-6">
-                  National Examinations Council preparation with current syllabus 
+                  National Examinations Council preparation with current syllabus
                   alignment and comprehensive topic coverage.
                 </p>
                 <div className="space-y-2 text-sm text-left">
@@ -509,7 +571,7 @@ export default function Landing() {
               Hear from students who achieved their dream scores with PrepNaija
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="hover-lift border">
               <CardContent className="p-8">
@@ -519,7 +581,7 @@ export default function Landing() {
                   ))}
                 </div>
                 <p className="text-muted-foreground mb-6 italic">
-                  "PrepNaija helped me improve my JAMB score from 180 to 289! The AI explanations 
+                  "PrepNaija helped me improve my JAMB score from 180 to 289! The AI explanations
                   made complex math topics so much easier to understand."
                 </p>
                 <div className="flex items-center space-x-3">
@@ -542,7 +604,7 @@ export default function Landing() {
                   ))}
                 </div>
                 <p className="text-muted-foreground mb-6 italic">
-                  "The offline mode was a lifesaver! I could practice even when there was no network 
+                  "The offline mode was a lifesaver! I could practice even when there was no network
                   in my village. Got 6 A's in WAEC!"
                 </p>
                 <div className="flex items-center space-x-3">
@@ -565,7 +627,7 @@ export default function Landing() {
                   ))}
                 </div>
                 <p className="text-muted-foreground mb-6 italic">
-                  "The progress tracking kept me motivated. Seeing my improvement in real-time 
+                  "The progress tracking kept me motivated. Seeing my improvement in real-time
                   pushed me to study harder. Scored 320 in JAMB!"
                 </p>
                 <div className="flex items-center space-x-3">
@@ -604,7 +666,7 @@ export default function Landing() {
               Start free and upgrade when you're ready for premium features
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Free Plan */}
             <Card className="hover-lift border">
@@ -614,7 +676,7 @@ export default function Landing() {
                   <div className="text-4xl font-bold text-primary mb-2">₦0</div>
                   <p className="text-muted-foreground">Perfect to get started</p>
                 </div>
-                
+
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 className="text-primary" size={16} />
@@ -637,9 +699,9 @@ export default function Landing() {
                     <span className="text-card-foreground">Community support</span>
                   </div>
                 </div>
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={handleSignup}
                   data-testid="button-get-started-free"
@@ -656,14 +718,14 @@ export default function Landing() {
                   Most Popular
                 </Badge>
               </div>
-              
+
               <CardContent className="p-8">
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold mb-2">Premium Plan</h3>
                   <div className="text-4xl font-bold mb-2">₦2,500</div>
                   <p className="opacity-90">per month</p>
                 </div>
-                
+
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 size={16} />
@@ -694,9 +756,9 @@ export default function Landing() {
                     <span>Priority support</span>
                   </div>
                 </div>
-                
-                <Button 
-                  variant="secondary" 
+
+                <Button
+                  variant="secondary"
                   className="w-full bg-white text-primary hover:bg-gray-100"
                   onClick={handleSignup}
                   data-testid="button-upgrade-premium"
@@ -729,7 +791,7 @@ export default function Landing() {
               Everything you need to know about PrepNaija
             </p>
           </div>
-          
+
           <div className="space-y-6">
             {[
               {
@@ -759,7 +821,7 @@ export default function Landing() {
             ].map((faq, index) => (
               <Card key={index} className="border">
                 <CardContent className="p-6">
-                  <div 
+                  <div
                     className="flex items-center justify-between cursor-pointer"
                     onClick={() => toggleFaq(index)}
                     data-testid={`button-faq-${index}`}
@@ -790,12 +852,12 @@ export default function Landing() {
             Ready to Ace Your Exams?
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join over 50,000 students who are already improving their scores with PrepNaija. 
+            Join over 50,000 students who are already improving their scores with PrepNaija.
             Start your journey to academic success today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="secondary"
               onClick={handleSignup}
               data-testid="button-start-practice-cta"
@@ -803,8 +865,8 @@ export default function Landing() {
             >
               Start Free Practice
             </Button>
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="outline"
               data-testid="button-watch-demo-cta"
               className="border-white text-white hover:bg-white hover:text-primary text-lg px-8 py-4"
@@ -817,6 +879,183 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20 bg-background">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+            Get in Touch
+          </h2>
+          <p className="text-xl text-muted-foreground">
+            Have questions? We're here to help you succeed.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-12 items-start">
+          {/* Left: Contact Info */}
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-xl font-semibold text-foreground mb-6">
+                Contact Information
+              </h3>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    <Mail className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Email</p>
+                    <a
+                      href="mailto:support@prepnaija.com"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      support@prepnaija.com
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    <Phone className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Phone/WhatsApp</p>
+                    <a
+                      href="tel:+2348123456789"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      +234 812 345 6789
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Support Hours</p>
+                    <p className="text-muted-foreground">
+                      Mon–Sat: 8:00 AM – 8:00 PM (WAT)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold text-foreground mb-4">
+                Follow Us
+              </h3>
+              <div className="flex gap-4">
+                <a
+                  href="#"
+                  className="bg-primary/10 p-3 rounded-lg hover:bg-primary hover:text-white transition-all"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+                <a
+                  href="#"
+                  className="bg-primary/10 p-3 rounded-lg hover:bg-primary hover:text-white transition-all"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="w-5 h-5" />
+                </a>
+                <a
+                  href="#"
+                  className="bg-primary/10 p-3 rounded-lg hover:bg-primary hover:text-white transition-all"
+                  aria-label="WhatsApp"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Contact Form */}
+          <Card className="border shadow-lg">
+            <CardContent className="p-8">
+              <h3 className="text-2xl font-semibold mb-6">Send a Message</h3>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <Label htmlFor="name">Your Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="message">Message</Label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    rows={6}
+                    placeholder="How can we help you today?"
+                    value={formData.message}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending..." : "Send Message"}
+                </Button>
+
+                {status === "success" && (
+                  <p className="text-center text-green-600 font-medium">
+                    ✅ Message sent successfully! We'll reply soon.
+                  </p>
+                )}
+
+                {status === "error" && (
+                  <p className="text-center text-red-600 font-medium">
+                    ❌ Failed to send. Please try again or email us directly.
+                  </p>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="text-center mt-12">
+          <p className="text-muted-foreground">
+            We typically respond within{" "}
+            <span className="font-bold text-foreground">2 hours</span> during
+            support hours.
+          </p>
+        </div>
+      </div>
+    </section>
 
       {/* Footer */}
       <footer className="bg-card border-t border-border py-16">
@@ -831,14 +1070,14 @@ export default function Landing() {
                 <span className="text-xl font-bold text-card-foreground">PrepNaija</span>
               </div>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Nigeria's leading exam preparation platform. Helping students ace JAMB, WAEC, 
+                Nigeria's leading exam preparation platform. Helping students ace JAMB, WAEC,
                 and NECO exams with AI-powered practice questions and personalized learning.
               </p>
               <div className="flex space-x-4">
                 {['twitter', 'facebook', 'instagram', 'linkedin'].map((social) => (
-                  <a 
+                  <a
                     key={social}
-                    href={`#${social}`} 
+                    href={`#${social}`}
                     className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
                     data-testid={`link-${social}`}
                   >
@@ -853,9 +1092,9 @@ export default function Landing() {
               <h4 className="font-semibold text-card-foreground mb-4">Quick Links</h4>
               <div className="space-y-3">
                 {['About Us', 'Features', 'Pricing', 'Contact', 'Help Center'].map((link) => (
-                  <a 
+                  <a
                     key={link}
-                    href={`#${link.toLowerCase().replace(' ', '-')}`} 
+                    href={`#${link.toLowerCase().replace(' ', '-')}`}
                     className="block text-muted-foreground hover:text-primary transition-colors"
                     data-testid={`link-${link.toLowerCase().replace(' ', '-')}`}
                   >
@@ -870,9 +1109,9 @@ export default function Landing() {
               <h4 className="font-semibold text-card-foreground mb-4">Support</h4>
               <div className="space-y-3">
                 {['FAQ', 'Contact Support', 'Privacy Policy', 'Terms of Service', 'Refund Policy'].map((link) => (
-                  <a 
+                  <a
                     key={link}
-                    href={`#${link.toLowerCase().replace(' ', '-')}`} 
+                    href={`#${link.toLowerCase().replace(' ', '-')}`}
                     className="block text-muted-foreground hover:text-primary transition-colors"
                     data-testid={`link-${link.toLowerCase().replace(' ', '-')}`}
                   >

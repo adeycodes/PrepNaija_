@@ -5,6 +5,7 @@ import { useOffline } from "@/hooks/useOffline";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import PrepNaija from "@/assets/prepnaija_logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,9 +62,9 @@ export default function Header() {
             {/* Logo */}
             <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <GraduationCap className="text-primary-foreground" size={16} />
+                <img src={PrepNaija} alt="PrepNaija Logo" className="w-10 h-10" />
               </div>
-              <span className="text-xl font-bold text-foreground">PrepNaija</span>
+              
             </Link>
 
             {/* Desktop Navigation */}

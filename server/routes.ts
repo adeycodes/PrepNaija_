@@ -8,6 +8,8 @@ import { alocService } from "./services/alocService";
 import { generateExplanation } from "./services/openaiService";
 import { sendStudyReminder, sendQuizResults } from "./services/smsService";
 import { insertQuizSessionSchema, insertUserProgressSchema } from "@shared/schema";
+import { sendContactEmails } from "./utils/sendEmail";
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -644,6 +646,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: error instanceof Error ? error.message : 'Failed to fetch recent questions'
       });
+    }
+  });
+
+  app.post('/api/contact', async (req, res) => {
+    console.log("📩 Contact form received:", req.body); // Debug log
+
+    const { name, email, message } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email address" });
+    }
+
+    try {
+      const result = await sendContactEmails({ name, email, message });
+
+      if (result.success) {
+        res.json({ message: "Message sent successfully! We'll get back to you soon." });
+      } else {
+        res.status(500).json({ error: "Failed to send email. Please try again." });
+      }
+    } catch (err) {
+      console.error("Contact route error:", err);
+      res.status(500).json({ error: "Server error" });
     }
   });
 

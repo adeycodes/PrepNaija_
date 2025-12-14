@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/lib/auth';
-import { 
+import {
   LayoutDashboard,
   BookOpen,
   BarChart3,
@@ -81,9 +81,13 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  const userName = user?.profile?.fullName || user?.firstName || user?.name || "Student";
-  const userEmail = user?.email || "student@example.com";
+  const userName = user?.profile?.fullName ||
+    (user as any)?.firstName ||
+    (user as any)?.name ||
+    "Student";
 
+  const userEmail = user?.email || "student@example.com";
+  
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -105,9 +109,9 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" 
-          onClick={() => setSidebarOpen(false)} 
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
@@ -160,15 +164,15 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
               {sidebarItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
-                
+
                 return (
                   <Button
                     key={item.id}
                     variant="ghost"
                     className={cn(
                       "w-full justify-start h-auto py-3 px-4 rounded-xl transition-all duration-200",
-                      isActive 
-                        ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:from-blue-600 hover:to-indigo-700" 
+                      isActive
+                        ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:from-blue-600 hover:to-indigo-700"
                         : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"
                     )}
                     onClick={() => {
@@ -199,7 +203,7 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
               <Target className="h-3.5 w-3.5" />
               <span className="font-medium">JAMB 2025 Preparation</span>
             </div>
-            
+
             <Button
               variant="outline"
               size="sm"
@@ -228,7 +232,7 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
             >
               <Menu className="h-5 w-5" />
             </Button>
-            
+
             {/* Page title */}
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent truncate">

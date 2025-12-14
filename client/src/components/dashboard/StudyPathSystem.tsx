@@ -55,13 +55,333 @@ import {
   type SubjectName,
   type Topic,
   type Section
-} from "../../utils/syllabusData"
+} from "../../utils/syllabusData";
+
+// ========================================
+// REAL API SERVICE FUNCTIONS
+// ========================================
+const apiService = {
+  // Base URL for API calls
+  baseURL: window.location.origin, // Automatically uses current domain (localhost:5173 for frontend)
+
+  // Make a request with proper error handling
+  async makeRequest(endpoint: string, options: any = {}) {
+    try {
+      const url = `${this.baseURL}${endpoint}`;
+      console.log(`[API] Request to: ${url}`, options);
+
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      console.log(`[API] Response Status: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log(`[API] Response Data:`, data);
+      return { data, success: true, error: null };
+    } catch (error: any) {
+      console.error(`[API] Request Failed for ${endpoint}:`, error);
+      return { data: null, success: false, error: error.message };
+    }
+  },
+
+  // Teach a topic using the backend
+  async teachTopic(topic: string, subject: string): Promise<{ text: string; success: boolean }> {
+    const result = await this.makeRequest("/api/teach", {
+      method: "POST",
+      body: JSON.stringify({
+        topic: `Teach me about ${topic} in detail for JAMB ${subject} preparation. Explain it simply with examples.`,
+        subject
+      })
+    });
+
+    if (result.success && result.data) {
+      return {
+        text: result.data.teaching || result.data.content || this.getFallbackLesson(topic, subject),
+        success: true
+      };
+    }
+
+    return {
+      text: this.getFallbackLesson(topic, subject),
+      success: false
+    };
+  },
+
+  // Chat with AI about a topic
+  async chatWithAI(message: string, subject: string): Promise<{ text: string; success: boolean }> {
+    const result = await this.makeRequest("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        message: `[JAMB ${subject}] ${message}`,
+        mode: "teach",
+        subject,
+        timestamp: Date.now() // Prevent caching
+      })
+    });
+
+    if (result.success && result.data) {
+      return {
+        text: result.data.response || result.data.message || this.getFallbackAnswer(message, subject),
+        success: true
+      };
+    }
+
+    return {
+      text: this.getFallbackAnswer(message, subject),
+      success: false
+    };
+  },
+
+  // Check API connection
+  async checkConnection(): Promise<{ connected: boolean; message: string }> {
+    try {
+      // Try multiple endpoints
+      const endpoints = [
+        { url: "/api/teach", method: "POST", body: { topic: "test", subject: "General" } },
+        { url: "/api/chat", method: "POST", body: { message: "test", mode: "teach" } },
+        { url: "/api/test-ai", method: "GET" }
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(`${this.baseURL}${endpoint.url}`, {
+            method: endpoint.method,
+            headers: { "Content-Type": "application/json" },
+            body: endpoint.body ? JSON.stringify(endpoint.body) : undefined,
+            signal: AbortSignal.timeout(5000) // 5 second timeout
+          });
+
+          if (response.ok) {
+            return { connected: true, message: `${endpoint.url} is working` };
+          }
+        } catch (e) {
+          // Continue to next endpoint
+        }
+      }
+
+      return { connected: false, message: "All API endpoints failed" };
+    } catch (error: any) {
+      return { connected: false, message: error.message || "Connection check failed" };
+    }
+  },
+
+  // Fallback lessons when API is offline
+  getFallbackLesson(topic: string, subject: string): string {
+    const lessons: Record<string, Record<string, string>> = {
+      "Biology": {
+        "Living Organisms": `# 🧬 Living Organisms - JAMB Biology
+
+## 📚 What You Need to Know
+
+All living things share 7 key characteristics (MRS GREN):
+
+**M** - Movement: Ability to change position  
+**R** - Respiration: Release energy from food  
+**S** - Sensitivity: Respond to stimuli  
+**G** - Growth: Increase in size and complexity  
+**R** - Reproduction: Produce offspring  
+**E** - Excretion: Remove waste products  
+**N** - Nutrition: Take in and use food
+
+## 🎯 JAMB Focus Points
+
+For JAMB 2025, focus on:
+1. Differences between living and non-living
+2. Plant vs. animal cell structures
+3. Levels of organization (cell → tissue → organ → system)
+
+## 📝 Practice Question
+
+*Which characteristic is unique to living things?*
+A) Movement  
+B) Respiration  
+C) Rusting  
+D) Melting
+
+**Answer: B** - Respiration is a life process. Rusting and melting are physical/chemical changes.
+
+## 💡 Study Strategy
+
+1. Memorize MRS GREN acronym
+2. Draw labeled cell diagrams
+3. Practice with 2020-2024 past questions`,
+        "Evolution Among Organisms": `# 🌿 Evolution Among Organisms - JAMB Biology
+
+## 📚 Key Concepts
+
+Evolution shows how organisms change over time through:
+- Natural Selection
+- Genetic Variation
+- Adaptation
+
+## 🔬 Major Groups to Study
+
+1. **Monera**: Bacteria (e.g., E. coli)
+2. **Protista**: Amoeba, Paramecium
+3. **Fungi**: Mushrooms, Yeast
+4. **Plantae**: Moss → Ferns → Flowering plants
+5. **Animalia**: Insects → Fish → Reptiles → Birds → Mammals
+
+## 🎯 JAMB Exam Tips
+
+- Know characteristics of each group
+- Understand evolutionary trends
+- Practice classification questions`
+      },
+      "Chemistry": {
+        "Acids, Bases and Salts": `# 🧪 Acids, Bases and Salts - JAMB Chemistry
+
+## 📚 Core Concepts
+
+**Acids**: pH < 7, donate H⁺ ions
+**Bases**: pH > 7, accept H⁺ ions
+**Salts**: Neutral compounds from acid-base reactions
+
+## 🎯 JAMB Requirements
+
+You must know:
+1. Properties of acids/bases
+2. pH scale (0-14)
+3. Acid-base indicators
+4. Preparation of salts
+
+## 🧪 Common Reactions
+
+Neutralization: Acid + Base → Salt + Water
+Example: HCl + NaOH → NaCl + H₂O
+
+## 💡 Study Plan
+
+1. Memorize common acids/bases
+2. Practice pH calculations
+3. Review 2018-2023 questions`
+      },
+      "Mathematics": {
+        "Polynomials": `# 📐 Polynomials - JAMB Mathematics
+
+## 📚 Definition
+
+Polynomial: Expression with variables and coefficients
+Example: 3x² + 2x - 5
+
+## 🔢 Key Operations
+
+1. **Addition/Subtraction**: Combine like terms
+2. **Multiplication**: Use distributive property
+3. **Division**: Long division or synthetic division
+
+## 🎯 JAMB Focus
+
+- Factor and Remainder Theorem
+- Roots of polynomials
+- Graphs of polynomials
+
+## 📝 Example Problem
+
+*Find remainder when x³ - 2x² + 3x - 4 is divided by (x-1)*
+
+**Solution**: Use Remainder Theorem
+f(1) = 1 - 2 + 3 - 4 = -2
+Answer: Remainder = -2`
+      }
+    };
+
+    const subjectLessons = lessons[subject] || lessons["Biology"];
+    return subjectLessons[topic] || `# ${topic} - JAMB ${subject}
+
+## 📚 Topic Overview
+
+This is an important topic for JAMB ${subject}. You should focus on understanding the key concepts and practicing with past questions.
+
+## 🎯 Learning Objectives
+
+1. Understand the basic principles
+2. Solve related problems
+3. Apply knowledge to exam questions
+
+## 💡 Study Approach
+
+- Review your textbook
+- Practice with examples
+- Ask questions about confusing parts
+
+Ready to begin? What would you like to learn first?`;
+  },
+
+  // Fallback answers for chat
+  getFallbackAnswer(question: string, subject: string): string {
+    const lowerQuestion = question.toLowerCase();
+    
+    if (lowerQuestion.includes("example") || lowerQuestion.includes("give me")) {
+      return `**Example for JAMB ${subject}:**
+      
+Let me provide a typical JAMB-style example:
+
+**Question**: ${question.replace("example", "").replace("give me", "")}
+
+**Solution Approach**:
+1. Identify key concepts
+2. Apply relevant formulas/rules
+3. Show step-by-step working
+4. State final answer clearly
+
+For specific examples, check past questions from 2020-2024.`;
+    }
+
+    if (lowerQuestion.includes("what is") || lowerQuestion.includes("define")) {
+      return `**Definition for JAMB ${subject}:**
+      
+${question} refers to a key concept in ${subject} that appears frequently in JAMB exams.
+
+**Key Points**:
+- Important for understanding advanced topics
+- Often tested in objective questions
+- Requires memorization of definitions
+
+**Exam Tip**: Write this definition in your notes and review weekly.`;
+    }
+
+    if (lowerQuestion.includes("how to") || lowerQuestion.includes("solve")) {
+      return `**Problem-Solving Steps for JAMB ${subject}:**
+      
+To solve this type of problem in JAMB:
+
+1. **Read carefully**: Understand what's asked
+2. **Identify approach**: Choose correct method
+3. **Show working**: Step-by-step solution
+4. **Check answer**: Verify your result
+
+**Practice**: Try similar problems from past questions.`;
+    }
+
+    return `**JAMB ${subject} Study Guidance**:
+    
+I understand you're asking about "${question}". For JAMB preparation:
+
+1. **Review the topic** in your textbook
+2. **Practice** with past questions (2020-2024)
+3. **Understand** the marking scheme
+4. **Ask** for clarification on difficult parts
+
+What specific aspect would you like to explore?`;
+  }
+};
+
 // ========================================
 // CONFETTI ANIMATION
 // ========================================
 const Confetti = ({ show }: { show: boolean }) => {
   if (!show) return null;
-  
+
   return (
     <div className="fixed inset-0 pointer-events-none z-50">
       {[...Array(50)].map((_, i) => (
@@ -75,10 +395,10 @@ const Confetti = ({ show }: { show: boolean }) => {
             animationDelay: `${Math.random() * 0.5}s`,
           }}
         >
-          <div 
+          <div
             className="w-3 h-3 rounded-full"
             style={{
-              backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'][Math.floor(Math.random() * 5)]
+              backgroundColor: ['#9aa5f2ff', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'][Math.floor(Math.random() * 5)]
             }}
           />
         </div>
@@ -180,7 +500,7 @@ const StudyTimer = () => {
 const QuickQuiz = ({ topic, onComplete }: { topic: Topic; onComplete: () => void }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
-  
+
   // Mock quiz data
   const quizQuestion = {
     question: `What is a key concept in ${topic.title}?`,
@@ -205,7 +525,7 @@ const QuickQuiz = ({ topic, onComplete }: { topic: Topic; onComplete: () => void
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="font-medium">{quizQuestion.question}</p>
-        
+
         <div className="space-y-2">
           {quizQuestion.options.map((option, index) => (
             <button
@@ -213,8 +533,8 @@ const QuickQuiz = ({ topic, onComplete }: { topic: Topic; onComplete: () => void
               onClick={() => !showResult && setSelectedAnswer(index)}
               className={`
                 w-full p-3 rounded-lg border-2 text-left transition-all
-                ${selectedAnswer === index 
-                  ? 'border-blue-500 bg-blue-100' 
+                ${selectedAnswer === index
+                  ? 'border-blue-500 bg-blue-100'
                   : 'border-gray-200 hover:border-blue-300'
                 }
                 ${showResult && index === quizQuestion.correctAnswer
@@ -233,8 +553,8 @@ const QuickQuiz = ({ topic, onComplete }: { topic: Topic; onComplete: () => void
         </div>
 
         {!showResult ? (
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             disabled={selectedAnswer === null}
             className="w-full"
           >
@@ -278,7 +598,7 @@ export default function JAMBStudyPath() {
   const [userQuestion, setUserQuestion] = useState("");
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const [bookmarkedTopics, setBookmarkedTopics] = useState<string[]>([]);
-  const [userNotes, setUserNotes] = useState<{[key: string]: string}>({});
+  const [userNotes, setUserNotes] = useState<{ [key: string]: string }>({});
   const [showNotes, setShowNotes] = useState(false);
 
   // Gamification State
@@ -290,6 +610,10 @@ export default function JAMBStudyPath() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [dailyGoal, setDailyGoal] = useState({ current: 2, target: 5 });
 
+  // API Connection State
+  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
+  const [apiMessage, setApiMessage] = useState("");
+
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -297,6 +621,22 @@ export default function JAMBStudyPath() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  // Check API connection on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      const result = await apiService.checkConnection();
+      setApiConnected(result.connected);
+      setApiMessage(result.message);
+      
+      if (!result.connected) {
+        console.warn("AI Backend is not connected. Using enhanced fallback responses.");
+        setAchievement("AI Assistant is offline. Using enhanced mode.");
+      }
+    };
+    
+    checkConnection();
+  }, []);
 
   // Calculate level from XP
   useEffect(() => {
@@ -307,67 +647,108 @@ export default function JAMBStudyPath() {
     }
   }, [xpPoints, level]);
 
-  // Mock learning function
-  const startLearning = async (topic: Topic) => {
-    setSelectedTopic(topic);
-    setView("learning");
-    
-    const mockLesson = `# ${topic.title}
+  // Format AI response for better display
+  const formatAIResponse = (response: string, topic?: Topic): string => {
+    // If response already has markdown formatting, return as is
+    if (response.includes('#') || response.includes('**') || response.includes('- ')) {
+      return response;
+    }
 
-## 📚 Learning Objectives
+    // Format plain text responses
+    if (topic) {
+      return `# ${topic.title}
 
-Today we'll master these key concepts:
+## 📚 AI Explanation
 
-${topic.objectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}
-
-## 🎯 What We'll Cover
-
-${topic.subtopics.map((sub, i) => `**${i + 1}. ${sub}**`).join('\n\n')}
+${response}
 
 ---
 
-## 💡 Let's Get Started!
+## 🎯 Learning Objectives
 
-I'm here to help you understand **${topic.title}** step by step. Feel free to:
+${topic?.objectives?.map((obj, i) => `${i + 1}. ${obj}`).join('\n') || "Understand key concepts and apply knowledge"}
 
-• Ask questions about any concept
-• Request examples and explanations  
-• Test your knowledge with quizzes
-• Get help with practice problems
+## 💡 Key Points
 
-What would you like to explore first?`;
+• Study the fundamental principles
+• Practice with examples
+• Review past questions
 
-    setChatMessages([{ role: "assistant", content: mockLesson }]);
+---
+
+## 🤔 Your Turn!
+
+What specific questions do you have about this topic?`;
+    }
+
+    return response;
   };
 
-  // Mock chat function
+  // REAL AI Learning function
+  const startLearning = async (topic: Topic) => {
+    if (!selectedSubject) return;
+    
+    setSelectedTopic(topic);
+    setView("learning");
+    setIsLoadingResponse(true);
+    setChatMessages([]);
+
+    try {
+      // Get initial teaching content from REAL API
+      const result = await apiService.teachTopic(topic.title, selectedSubject);
+      
+      const formattedContent = formatAIResponse(result.text, topic);
+      
+      setChatMessages([{ role: "assistant", content: formattedContent }]);
+      
+      // Add XP for starting a lesson
+      setXpPoints(prev => prev + 10);
+      
+      if (!result.success && apiConnected === false) {
+        setAchievement("Using enhanced fallback lessons");
+      }
+    } catch (error) {
+      console.error("Error starting lesson:", error);
+      setChatMessages([{
+        role: "assistant",
+        content: formatAIResponse(`Welcome to ${topic.title}!\n\nI'm here to help you master this JAMB ${selectedSubject} topic. Ask me any questions!`, topic)
+      }]);
+      setAchievement("Lesson loaded with enhanced content");
+    } finally {
+      setIsLoadingResponse(false);
+    }
+  };
+
+  // REAL AI Chat function
   const askQuestion = async () => {
-    if (!userQuestion.trim() || isLoadingResponse) return;
+    if (!userQuestion.trim() || isLoadingResponse || !selectedSubject) return;
 
     const question = userQuestion.trim();
     setChatMessages(prev => [...prev, { role: "user", content: question }]);
     setUserQuestion("");
     setIsLoadingResponse(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const response = `Great question! Let me explain that concept clearly.
-
-${question.includes("example") ? "Here's a practical example:" : "Here's what you need to know:"}
-
-This is a detailed explanation that would come from your AI backend. The system would provide comprehensive, exam-focused answers tailored to JAMB preparation.
-
-Key points to remember:
-• Important concept 1
-• Important concept 2  
-• Important concept 3
-
-Would you like me to elaborate on any of these points?`;
+    try {
+      // Get response from REAL API
+      const result = await apiService.chatWithAI(question, selectedSubject);
       
-      setChatMessages(prev => [...prev, { role: "assistant", content: response }]);
-      setIsLoadingResponse(false);
+      setChatMessages(prev => [...prev, { role: "assistant", content: formatAIResponse(result.text) }]);
+      
+      // Add XP for asking questions
       setXpPoints(prev => prev + 5);
-    }, 1500);
+      
+      if (!result.success && apiConnected === false) {
+        setAchievement("Using enhanced answers");
+      }
+    } catch (error) {
+      console.error("Error asking question:", error);
+      setChatMessages(prev => [...prev, {
+        role: "assistant",
+        content: formatAIResponse(`Thanks for your question about "${question}"!\n\nFor JAMB ${selectedSubject}, I recommend:\n\n1. Reviewing the concept in your textbook\n2. Practicing with past questions\n3. Asking specific follow-up questions\n\nWhat aspect would you like to explore in more detail?`)
+      }]);
+    } finally {
+      setIsLoadingResponse(false);
+    }
   };
 
   // Mark topic complete
@@ -379,7 +760,7 @@ Would you like me to elaborate on any of these points?`;
       setShowConfetti(true);
       setAchievement("Topic Mastered! +50 XP");
       setTimeout(() => setShowConfetti(false), 4000);
-      
+
       // Check for streak achievement
       if ((completedTopics.length + 1) % 5 === 0) {
         setTimeout(() => setAchievement(`${completedTopics.length + 1} Topics Mastered! 🔥`), 3000);
@@ -390,8 +771,8 @@ Would you like me to elaborate on any of these points?`;
 
   // Toggle bookmark
   const toggleBookmark = (topicId: string) => {
-    setBookmarkedTopics(prev => 
-      prev.includes(topicId) 
+    setBookmarkedTopics(prev =>
+      prev.includes(topicId)
         ? prev.filter(id => id !== topicId)
         : [...prev, topicId]
     );
@@ -401,6 +782,14 @@ Would you like me to elaborate on any of these points?`;
   const getSubjectProgress = (subject: SubjectName) => {
     const total = getTotalTopicsCount(subject);
     return Math.round((completedTopics.length / total) * 100);
+  };
+
+  // Test API connection
+  const testAPIConnection = async () => {
+    const result = await apiService.checkConnection();
+    setApiConnected(result.connected);
+    setApiMessage(result.message);
+    setAchievement(result.connected ? "✅ API Connected Successfully!" : "❌ API Connection Failed");
   };
 
   // ========================================
@@ -413,7 +802,7 @@ Would you like me to elaborate on any of these points?`;
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <Confetti show={showConfetti} />
         <AchievementToast achievement={achievement} onClose={() => setAchievement(null)} />
-        
+
         <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
           {/* Hero Header */}
           <div className="text-center space-y-4 py-8">
@@ -423,6 +812,37 @@ Would you like me to elaborate on any of these points?`;
               </h1>
               <p className="text-lg text-muted-foreground mt-2">Your Journey to Excellence Starts Here 🚀</p>
             </div>
+          </div>
+
+          {/* API Status */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {apiConnected === null ? (
+                <div className="flex items-center text-amber-600">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm">Checking AI Connection...</span>
+                </div>
+              ) : apiConnected ? (
+                <div className="flex items-center text-green-600">
+                  <Wifi className="h-4 w-4 mr-2" />
+                  <span className="text-sm">AI Assistant: Connected</span>
+                </div>
+              ) : (
+                <div className="flex items-center text-red-600">
+                  <WifiOff className="h-4 w-4 mr-2" />
+                  <span className="text-sm">AI Assistant: Offline</span>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={testAPIConnection}
+              className="gap-2"
+            >
+              <Wifi className="h-3 w-3" />
+              Test Connection
+            </Button>
           </div>
 
           {/* Stats Dashboard */}
@@ -487,8 +907,8 @@ Would you like me to elaborate on any of these points?`;
                   </p>
                 </div>
               </div>
-              <Progress 
-                value={(dailyGoal.current / dailyGoal.target) * 100} 
+              <Progress
+                value={(dailyGoal.current / dailyGoal.target) * 100}
                 className="h-3"
               />
             </CardContent>
@@ -503,7 +923,7 @@ Would you like me to elaborate on any of these points?`;
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {subjects.map((subjectName) => {
                 const subjectData = getSubjectData(subjectName);
-                const Icon = subjectData.icon;
+                const Icon = subjectData!.icon;
                 const progress = getSubjectProgress(subjectName);
 
                 return (
@@ -517,15 +937,15 @@ Would you like me to elaborate on any of these points?`;
                   >
                     {/* Animated gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-br from-transparent to-blue-100 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
+
                     <CardHeader className="relative">
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${subjectData.color} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all shadow-xl`}>
+                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${subjectData?.color || 'default-color-class'} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all shadow-xl`}>
                           <Icon className="h-8 w-8 text-white" />
                         </div>
                         <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:translate-x-2 transition-transform" />
                       </div>
-                      
+
                       <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">
                         {subjectName}
                       </CardTitle>
@@ -569,7 +989,7 @@ Would you like me to elaborate on any of these points?`;
   // ========================================
   if (view === "sections" && selectedSubject) {
     const subjectData = getSubjectData(selectedSubject);
-    const Icon = subjectData.icon;
+    const Icon = subjectData?.icon || 'default-icon-class';
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -583,7 +1003,7 @@ Would you like me to elaborate on any of these points?`;
           <Card className="border-2 border-blue-200">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${subjectData.color} flex items-center justify-center shadow-xl`}>
+                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${subjectData?.color || 'default-color-class'} flex items-center justify-center shadow-xl`}>
                   <Icon className="h-10 w-10 text-white" />
                 </div>
                 <div className="flex-1">
@@ -602,7 +1022,7 @@ Would you like me to elaborate on any of these points?`;
 
           {/* Sections */}
           <div className="space-y-4">
-            {subjectData.sections.map((section, idx) => (
+            {subjectData?.sections.map((section, idx) => (
               <Card
                 key={section.id}
                 className="group hover:shadow-xl transition-all cursor-pointer border-2 hover:border-blue-400"
@@ -763,12 +1183,12 @@ Would you like me to elaborate on any of these points?`;
   // ========================================
   // LEARNING VIEW
   // ========================================
-  if (view === "learning" && selectedTopic) {
+  if (view === "learning" && selectedTopic && selectedSubject) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
         <Confetti show={showConfetti} />
         <AchievementToast achievement={achievement} onClose={() => setAchievement(null)} />
-        
+
         <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -786,7 +1206,7 @@ Would you like me to elaborate on any of these points?`;
                 <Target className="h-4 w-4" />
                 {showQuiz ? 'Hide' : 'Take'} Quiz
               </Button>
-              
+
               <Button
                 onClick={markTopicComplete}
                 size="lg"
@@ -828,8 +1248,8 @@ Would you like me to elaborate on any of these points?`;
 
               {/* Quiz Section */}
               {showQuiz && (
-                <QuickQuiz 
-                  topic={selectedTopic} 
+                <QuickQuiz
+                  topic={selectedTopic}
                   onComplete={() => {
                     setShowQuiz(false);
                     setXpPoints(prev => prev + 25);
@@ -846,9 +1266,18 @@ Would you like me to elaborate on any of these points?`;
                       <Brain className="h-5 w-5" />
                       AI Learning Assistant
                     </CardTitle>
-                    <Badge variant="secondary" className="gap-1">
-                      <Wifi className="h-3 w-3" />
-                      Active
+                    <Badge variant={apiConnected ? "default" : "destructive"} className="gap-1">
+                      {apiConnected ? (
+                        <>
+                          <Wifi className="h-3 w-3" />
+                          Connected
+                        </>
+                      ) : (
+                        <>
+                          <WifiOff className="h-3 w-3" />
+                          Enhanced Mode
+                        </>
+                      )}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -929,7 +1358,9 @@ Would you like me to elaborate on any of these points?`;
                             </div>
                             <div>
                               <p className="text-xs font-semibold text-muted-foreground mb-1">AI Tutor</p>
-                              <p className="text-sm text-muted-foreground">Thinking...</p>
+                              <p className="text-sm text-muted-foreground">
+                                {apiConnected ? "Thinking..." : "Preparing enhanced response..."}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1003,21 +1434,25 @@ Would you like me to elaborate on any of these points?`;
                   <CardTitle className="text-sm">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full justify-start gap-2"
                     onClick={() => setShowNotes(!showNotes)}
                   >
                     <PenTool className="h-4 w-4" />
                     {showNotes ? 'Hide' : 'Show'} Notes
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={testAPIConnection}
+                  >
+                    <Wifi className="h-4 w-4" />
+                    Test AI Connection
+                  </Button>
                   <Button variant="outline" className="w-full justify-start gap-2">
                     <Share2 className="h-4 w-4" />
                     Share Progress
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <Download className="h-4 w-4" />
-                    Download Summary
                   </Button>
                 </CardContent>
               </Card>
